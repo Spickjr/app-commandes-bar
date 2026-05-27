@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useCommandeStore } from "../store";
+import { supabase } from "../supabase";
 
 export default function BarPage() {
   const commandesBar = useCommandeStore((state) => state.commandesBar);
@@ -11,37 +12,47 @@ export default function BarPage() {
   const terminerCommande = useCommandeStore((state) => state.terminerCommande);
 
   const [nouvellesCommandes, setNouvellesCommandes] = useState<number[]>([]);
-  const anciennesCommandes = useRef<number[]>([]);
-  const premiereLecture = useRef(true);
 
   const effetBouton =
     "transition-all duration-150 active:scale-95 active:opacity-80";
 
   useEffect(() => {
     chargerCommandes();
+
+    const channel = supabase
+      .channel("bar-notifications")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "commandes",
+        },
+        (payload) => {
+          const nouvelleCommande = payload.new as { id: number };
+
+          setNouvellesCommandes((anciennes) => [
+            ...anciennes,
+            nouvelleCommande.id,
+          ]);
+
+          if (navigator.vibrate) {
+            navigator.vibrate([300, 100, 300]);
+          }
+
+          setTimeout(() => {
+            setNouvellesCommandes((anciennes) =>
+              anciennes.filter((id) => id !== nouvelleCommande.id)
+            );
+          }, 5000);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [chargerCommandes]);
-
-  useEffect(() => {
-    const idsActuels = commandesBar.map((c) => c.id);
-
-    const nouvelles = idsActuels.filter(
-      (id) => !anciennesCommandes.current.includes(id)
-    );
-
-    if (!premiereLecture.current && nouvelles.length > 0) {
-      setNouvellesCommandes(nouvelles);
-
-      if (navigator.vibrate) {
-        navigator.vibrate([200, 100, 200]);
-      }
-
-      setTimeout(() => {
-        setNouvellesCommandes([]);
-      }, 3000);
-    }
-premiereLecture.current = false;
-    anciennesCommandes.current = idsActuels;
-  }, [commandesBar]);
 
   const totalCommande = (items: { prix: number; quantite: number }[]) =>
     items.reduce((total, item) => total + item.prix * item.quantite, 0);
@@ -49,9 +60,7 @@ premiereLecture.current = false;
   return (
     <main className="min-h-screen bg-black text-white p-4 sm:p-6">
       <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-4xl font-bold leading-tight">
-          Commandes
-        </h1>
+        <h1 className="text-4xl font-bold leading-tight">Commandes</h1>
 
         <div className="grid grid-cols-2 gap-3 sm:flex sm:gap-4">
           <Link
@@ -88,7 +97,7 @@ premiereLecture.current = false;
                 key={commande.id}
                 className={`relative rounded-2xl p-4 sm:p-6 transition-all duration-500 ${
                   estNouvelle
-                    ? "bg-orange-500 animate-pulse scale-[1.02]"
+                    ? "bg-orange-500 animate-pulse scale-[1.02] ring-4 ring-orange-300"
                     : "bg-zinc-900"
                 }`}
               >
@@ -98,9 +107,7 @@ premiereLecture.current = false;
                   </div>
                 )}
 
-                <h2 className="text-2xl font-bold mb-1">
-                  {commande.table}
-                </h2>
+                <h2 className="text-2xl font-bold mb-1">{commande.table}</h2>
 
                 <p className="text-white text-base sm:text-lg font-bold mb-4">
                   Serveur : {commande.serveur || "Non renseigné"}
