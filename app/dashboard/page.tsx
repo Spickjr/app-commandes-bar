@@ -12,6 +12,9 @@ export default function DashboardPage() {
     (state) => state.viderHistorique
   );
 
+  const effetBouton =
+    "transition-all duration-150 active:scale-95 active:opacity-80";
+
   const totalCommande = (
     items: { prix: number; quantite: number }[]
   ) =>
@@ -83,21 +86,21 @@ export default function DashboardPage() {
                 viderHistorique();
               }
             }}
-            className="bg-red-700 px-4 py-3 rounded-2xl font-bold text-base sm:text-lg"
+            className={`bg-red-700 px-4 py-3 rounded-2xl font-bold text-base sm:text-lg ${effetBouton}`}
           >
             Vider
           </button>
 
           <Link
             href="/bar"
-            className="bg-orange-500 text-center px-4 py-3 rounded-2xl font-bold text-base sm:text-lg"
+            className={`bg-orange-500 text-center px-4 py-3 rounded-2xl font-bold text-base sm:text-lg ${effetBouton}`}
           >
             Commandes
           </Link>
 
           <Link
             href="/"
-            className="bg-zinc-700 text-center px-4 py-3 rounded-2xl font-bold text-base sm:text-lg col-span-2 sm:col-span-1"
+            className={`bg-zinc-700 text-center px-4 py-3 rounded-2xl font-bold text-base sm:text-lg col-span-2 sm:col-span-1 ${effetBouton}`}
           >
             Tables
           </Link>
@@ -246,7 +249,7 @@ export default function DashboardPage() {
                               commande.id
                             )
                           }
-                          className="bg-red-600 px-4 py-3 rounded-xl font-bold text-sm sm:text-base"
+                          className={`bg-red-600 px-4 py-3 rounded-xl font-bold text-sm sm:text-base ${effetBouton}`}
                         >
                           Effacer
                         </button>

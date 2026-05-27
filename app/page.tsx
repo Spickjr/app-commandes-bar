@@ -45,6 +45,9 @@ export default function Home() {
     return "bg-zinc-800";
   };
 
+  const effetBouton =
+    "transition-all duration-150 active:scale-95 active:opacity-80";
+
   return (
     <main className="min-h-screen bg-black p-4 sm:p-6">
       <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
@@ -55,14 +58,14 @@ export default function Home() {
         <div className="grid grid-cols-2 gap-3 sm:flex sm:gap-4">
           <Link
             href="/dashboard"
-            className="bg-green-600 text-white text-center px-4 py-3 rounded-2xl text-lg sm:text-xl font-bold"
+            className={`bg-green-600 text-white text-center px-4 py-3 rounded-2xl text-lg sm:text-xl font-bold ${effetBouton}`}
           >
             Dashboard
           </Link>
 
           <Link
             href="/bar"
-            className="bg-orange-500 text-white text-center px-4 py-3 rounded-2xl text-lg sm:text-xl font-bold"
+            className={`bg-orange-500 text-white text-center px-4 py-3 rounded-2xl text-lg sm:text-xl font-bold ${effetBouton}`}
           >
             Commandes
           </Link>
@@ -111,7 +114,7 @@ export default function Home() {
                   type="button"
                   className={`w-full ${couleurTable(
                     table
-                  )} text-white rounded-2xl p-4 sm:p-6 min-h-[120px] sm:min-h-[130px]`}
+                  )} text-white rounded-2xl p-4 sm:p-6 min-h-[120px] sm:min-h-[130px] ${effetBouton}`}
                 >
                   <div className="text-2xl sm:text-2xl font-bold">
                     Table {numero}
@@ -141,7 +144,7 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => setStatutTable(table, "libre")}
-                  className="w-full bg-red-600 text-white rounded-xl py-3 text-base font-bold"
+                  className={`w-full bg-red-600 text-white rounded-xl py-3 text-base font-bold ${effetBouton}`}
                 >
                   Libérer
                 </button>
@@ -149,7 +152,7 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => setStatutTable(table, "occupée")}
-                  className="w-full bg-blue-600 text-white rounded-xl py-3 text-base font-bold"
+                  className={`w-full bg-blue-600 text-white rounded-xl py-3 text-base font-bold ${effetBouton}`}
                 >
                   Client arrivé
                 </button>

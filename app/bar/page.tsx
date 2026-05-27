@@ -10,6 +10,9 @@ export default function BarPage() {
   const marquerPrete = useCommandeStore((state) => state.marquerPrete);
   const terminerCommande = useCommandeStore((state) => state.terminerCommande);
 
+  const effetBouton =
+    "transition-all duration-150 active:scale-95 active:opacity-80";
+
   useEffect(() => {
     chargerCommandes();
   }, [chargerCommandes]);
@@ -27,14 +30,14 @@ export default function BarPage() {
         <div className="grid grid-cols-2 gap-3 sm:flex sm:gap-4">
           <Link
             href="/dashboard"
-            className="bg-green-600 text-center px-4 py-3 rounded-2xl text-lg font-bold"
+            className={`bg-green-600 text-center px-4 py-3 rounded-2xl text-lg font-bold ${effetBouton}`}
           >
             Dashboard
           </Link>
 
           <Link
             href="/"
-            className="bg-zinc-700 text-center px-4 py-3 rounded-2xl text-lg font-bold"
+            className={`bg-zinc-700 text-center px-4 py-3 rounded-2xl text-lg font-bold ${effetBouton}`}
           >
             Tables
           </Link>
@@ -90,7 +93,7 @@ export default function BarPage() {
                   <button
                     type="button"
                     onClick={() => marquerPrete(commande.id)}
-                    className="bg-blue-500 px-4 py-3 rounded-xl font-bold text-lg"
+                    className={`bg-blue-500 px-4 py-3 rounded-xl font-bold text-lg ${effetBouton}`}
                   >
                     Marquer prête
                   </button>
@@ -103,7 +106,7 @@ export default function BarPage() {
                 <button
                   type="button"
                   onClick={() => terminerCommande(commande.id)}
-                  className="bg-red-600 px-4 py-3 rounded-xl font-bold text-lg"
+                  className={`bg-red-600 px-4 py-3 rounded-xl font-bold text-lg ${effetBouton}`}
                 >
                   Commande récupérée
                 </button>

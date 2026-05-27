@@ -26,6 +26,9 @@ export default function TablePage() {
   const [personnes, setPersonnes] = useState(0);
   const [note, setNote] = useState("");
 
+  const effetBouton =
+    "transition-all duration-150 active:scale-95 active:opacity-80";
+
   useEffect(() => {
     setServeur(localStorage.getItem("serveur") || "");
   }, []);
@@ -105,14 +108,18 @@ export default function TablePage() {
     setCommandes((ancienne) =>
       ancienne
         .map((item) =>
-          item.nom === boisson ? { ...item, quantite: item.quantite - 1 } : item
+          item.nom === boisson
+            ? { ...item, quantite: item.quantite - 1 }
+            : item
         )
         .filter((item) => item.quantite > 0)
     );
   };
 
   const supprimerBoisson = (boisson: string) => {
-    setCommandes((ancienne) => ancienne.filter((item) => item.nom !== boisson));
+    setCommandes((ancienne) =>
+      ancienne.filter((item) => item.nom !== boisson)
+    );
   };
 
   const enregistrerInfos = () => {
@@ -139,14 +146,14 @@ export default function TablePage() {
   };
 
   return (
-    <main className="min-h-screen bg-black text-white p-6">
+    <main className="min-h-screen bg-black text-white p-4 sm:p-6">
       <h1 className="text-4xl font-bold mb-4">{tableNom}</h1>
 
-      <p className="text-orange-400 text-xl mb-6">
+      <p className="text-orange-400 text-lg sm:text-xl mb-6">
         Serveur : {serveur || "Non renseigné"}
       </p>
 
-      <div className="bg-zinc-900 rounded-2xl p-6 mb-8">
+      <div className="bg-zinc-900 rounded-2xl p-5 sm:p-6 mb-8">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-bold">Infos Client</h2>
 
@@ -154,7 +161,7 @@ export default function TablePage() {
             <button
               type="button"
               onClick={() => setModeEditionInfos(true)}
-              className="bg-blue-600 px-4 py-2 rounded-xl font-bold"
+              className={`bg-blue-600 px-4 py-2 rounded-xl font-bold ${effetBouton}`}
             >
               Modifier
             </button>
@@ -163,17 +170,47 @@ export default function TablePage() {
 
         {modeEditionInfos ? (
           <div className="grid gap-4">
-            <input type="text" placeholder="Nom du client" value={nomClient} onChange={(e) => setNomClient(e.target.value)} className="bg-zinc-800 px-4 py-3 rounded-xl" />
-            <input type="text" placeholder="Téléphone" value={telephone} onChange={(e) => setTelephone(e.target.value)} className="bg-zinc-800 px-4 py-3 rounded-xl" />
-            <input type="number" placeholder="Nombre de personnes" value={personnes} onChange={(e) => setPersonnes(Number(e.target.value))} className="bg-zinc-800 px-4 py-3 rounded-xl" />
-            <textarea placeholder="Note spéciale" value={note} onChange={(e) => setNote(e.target.value)} className="bg-zinc-800 px-4 py-3 rounded-xl" />
+            <input
+              type="text"
+              placeholder="Nom du client"
+              value={nomClient}
+              onChange={(e) => setNomClient(e.target.value)}
+              className="bg-zinc-800 px-4 py-3 rounded-xl"
+            />
 
-            <button type="button" onClick={enregistrerInfos} className="bg-blue-600 py-3 rounded-xl font-bold">
+            <input
+              type="text"
+              placeholder="Téléphone"
+              value={telephone}
+              onChange={(e) => setTelephone(e.target.value)}
+              className="bg-zinc-800 px-4 py-3 rounded-xl"
+            />
+
+            <input
+              type="number"
+              placeholder="Nombre de personnes"
+              value={personnes}
+              onChange={(e) => setPersonnes(Number(e.target.value))}
+              className="bg-zinc-800 px-4 py-3 rounded-xl"
+            />
+
+            <textarea
+              placeholder="Note spéciale"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              className="bg-zinc-800 px-4 py-3 rounded-xl"
+            />
+
+            <button
+              type="button"
+              onClick={enregistrerInfos}
+              className={`bg-blue-600 py-3 rounded-xl font-bold ${effetBouton}`}
+            >
               Enregistrer les infos
             </button>
           </div>
         ) : (
-          <div className="space-y-2 text-xl">
+          <div className="space-y-2 text-lg sm:text-xl">
             <p>Client : {infosExistantes?.nom || "Non renseigné"}</p>
             <p>Téléphone : {infosExistantes?.telephone || "Non renseigné"}</p>
             <p>Personnes : {infosExistantes?.personnes || 0}</p>
@@ -182,18 +219,23 @@ export default function TablePage() {
         )}
       </div>
 
-      <Link href="/" className="inline-block mb-8 bg-zinc-700 px-5 py-3 rounded-xl font-bold">
+      <Link
+        href="/"
+        className={`inline-block mb-8 bg-zinc-700 px-5 py-3 rounded-xl font-bold ${effetBouton}`}
+      >
         ← Retour aux tables
       </Link>
 
-      <div className="flex flex-wrap gap-4 mb-8">
+      <div className="flex flex-wrap gap-3 mb-8">
         {Object.keys(categories).map((categorie) => (
           <button
             type="button"
             key={categorie}
             onClick={() => setCategorieActive(categorie)}
-            className={`px-5 py-3 rounded-xl font-bold ${
-              categorieActive === categorie ? "bg-orange-500" : "bg-zinc-800"
+            className={`px-4 py-3 rounded-xl font-bold ${effetBouton} ${
+              categorieActive === categorie
+                ? "bg-orange-500"
+                : "bg-zinc-800"
             }`}
           >
             {categorie}
@@ -201,40 +243,73 @@ export default function TablePage() {
         ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-4 mb-8">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-8">
         {boissons.map((boisson) => (
           <button
             type="button"
             key={boisson.nom}
             onClick={() => ajouterBoisson(boisson)}
-            className="bg-orange-500 p-6 rounded-2xl text-2xl font-bold"
+            className={`bg-orange-500 p-5 sm:p-6 rounded-2xl text-xl sm:text-2xl font-bold ${effetBouton}`}
           >
             <div>{boisson.nom}</div>
-            <div className="text-lg mt-2">{boisson.prix} €</div>
+
+            <div className="text-base sm:text-lg mt-2">
+              {boisson.prix} €
+            </div>
           </button>
         ))}
       </div>
 
-      <div className="bg-zinc-900 rounded-2xl p-6">
+      <div className="bg-zinc-900 rounded-2xl p-5 sm:p-6">
         <h2 className="text-2xl font-bold mb-4">Commande</h2>
 
         {commandes.map((item) => (
-          <div key={item.nom} className="flex items-center justify-between bg-zinc-800 p-3 rounded-xl mb-2">
-            <p className="text-xl">
-              • {item.nom} x{item.quantite} — {item.prix * item.quantite} €
+          <div
+            key={item.nom}
+            className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-zinc-800 p-4 rounded-xl mb-3"
+          >
+            <p className="text-lg sm:text-xl break-words">
+              • {item.nom} x{item.quantite} —{" "}
+              {item.prix * item.quantite} €
             </p>
 
             <div className="flex gap-2">
-              <button type="button" onClick={() => enleverUn(item.nom)} className="bg-zinc-600 px-4 py-2 rounded-xl font-bold">-</button>
-              <button type="button" onClick={() => ajouterBoisson(item)} className="bg-green-600 px-4 py-2 rounded-xl font-bold">+</button>
-              <button type="button" onClick={() => supprimerBoisson(item.nom)} className="bg-red-600 px-4 py-2 rounded-xl font-bold">Supprimer</button>
+              <button
+                type="button"
+                onClick={() => enleverUn(item.nom)}
+                className={`bg-zinc-600 px-4 py-2 rounded-xl font-bold ${effetBouton}`}
+              >
+                -
+              </button>
+
+              <button
+                type="button"
+                onClick={() => ajouterBoisson(item)}
+                className={`bg-green-600 px-4 py-2 rounded-xl font-bold ${effetBouton}`}
+              >
+                +
+              </button>
+
+              <button
+                type="button"
+                onClick={() => supprimerBoisson(item.nom)}
+                className={`bg-red-600 px-4 py-2 rounded-xl font-bold ${effetBouton}`}
+              >
+                Supprimer
+              </button>
             </div>
           </div>
         ))}
 
-        <div className="mt-6 text-3xl font-bold">Total : {totalCommande} €</div>
+        <div className="mt-6 text-3xl font-bold">
+          Total : {totalCommande} €
+        </div>
 
-        <button type="button" onClick={envoyerAuBar} className="mt-6 bg-green-500 px-6 py-4 rounded-2xl text-xl font-bold">
+        <button
+          type="button"
+          onClick={envoyerAuBar}
+          className={`mt-6 w-full sm:w-auto bg-green-500 px-6 py-4 rounded-2xl text-xl font-bold ${effetBouton}`}
+        >
           Envoyer au bar
         </button>
       </div>
