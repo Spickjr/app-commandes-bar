@@ -48,7 +48,11 @@ export default function Home() {
   const effetBouton =
     "transition-all duration-150 active:scale-95 active:opacity-80";
 
-  const deconnexion = () => {
+  const serveur = typeof window !== "undefined"
+  ? localStorage.getItem("serveur")
+  : "";
+
+const deconnexion = () => {
     localStorage.removeItem("serveur");
     localStorage.removeItem("connecte");
 
@@ -61,6 +65,9 @@ export default function Home() {
         <h1 className="text-4xl sm:text-4xl font-bold text-white leading-tight">
           Gestion des Tables
         </h1>
+        <p className="text-zinc-400 text-base sm:text-lg font-medium">
+  Serveur : {serveur}
+</p>
 
         <div className="grid grid-cols-3 gap-3 sm:flex sm:gap-4">
           <Link
