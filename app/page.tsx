@@ -28,19 +28,32 @@ export default function Home() {
 
   const tables = Array.from({ length: 30 }, (_, i) => i + 1);
 
+  const serveur =
+    typeof window !== "undefined"
+      ? localStorage.getItem("serveur")
+      : "";
+
   const couleurTable = (table: string) => {
     const commandeTable = commandesBar.find(
       (commande) => commande.table === table
     );
 
-    if (commandeTable?.statut === "prête") return "bg-green-600";
-    if (commandeTable?.statut === "envoyée") return "bg-orange-500";
+    if (commandeTable?.statut === "prête")
+      return "bg-green-600 shadow-lg shadow-green-500/20";
+
+    if (commandeTable?.statut === "envoyée")
+      return "bg-orange-500 shadow-lg shadow-orange-500/20";
 
     const statut = statutsTables[table];
 
-    if (statut === "prete") return "bg-green-600";
-    if (statut === "commande") return "bg-orange-500";
-    if (statut === "occupée") return "bg-blue-600";
+    if (statut === "prete")
+      return "bg-green-600 shadow-lg shadow-green-500/20";
+
+    if (statut === "commande")
+      return "bg-orange-500 shadow-lg shadow-orange-500/20";
+
+    if (statut === "occupée")
+      return "bg-blue-600 shadow-lg shadow-blue-500/20";
 
     return "bg-zinc-800";
   };
@@ -48,11 +61,7 @@ export default function Home() {
   const effetBouton =
     "transition-all duration-150 active:scale-95 active:opacity-80";
 
-  const serveur = typeof window !== "undefined"
-  ? localStorage.getItem("serveur")
-  : "";
-
-const deconnexion = () => {
+  const deconnexion = () => {
     localStorage.removeItem("serveur");
     localStorage.removeItem("connecte");
 
@@ -62,24 +71,27 @@ const deconnexion = () => {
   return (
     <main className="min-h-screen bg-black p-4 sm:p-6">
       <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-4xl sm:text-4xl font-bold text-white leading-tight">
-          Gestion des Tables
-        </h1>
-        <p className="text-zinc-400 text-base sm:text-lg font-medium">
-  Serveur : {serveur}
-</p>
+        <div>
+          <h1 className="text-4xl sm:text-4xl font-bold text-white leading-tight">
+            Gestion des Tables
+          </h1>
+
+          <p className="text-zinc-400 text-base sm:text-lg font-medium mt-2">
+            Serveur : {serveur}
+          </p>
+        </div>
 
         <div className="grid grid-cols-3 gap-3 sm:flex sm:gap-4">
           <Link
             href="/dashboard"
-            className={`bg-green-600 text-white flex items-center justify-center px-3 py-3 rounded-2xl text-base sm:text-xl font-bold ${effetBouton}`}
+            className={`bg-green-600 shadow-lg shadow-green-500/20 text-white flex items-center justify-center px-3 py-3 rounded-2xl text-base sm:text-xl font-bold ${effetBouton}`}
           >
             Dashboard
           </Link>
 
           <Link
             href="/bar"
-            className={`bg-orange-500 text-white flex items-center justify-center px-3 py-3 rounded-2xl text-base sm:text-xl font-bold ${effetBouton}`}
+            className={`bg-orange-500 shadow-lg shadow-orange-500/20 text-white flex items-center justify-center px-3 py-3 rounded-2xl text-base sm:text-xl font-bold ${effetBouton}`}
           >
             Commandes
           </Link>
@@ -87,7 +99,7 @@ const deconnexion = () => {
           <button
             type="button"
             onClick={deconnexion}
-            className={`bg-red-600 text-white flex items-center justify-center px-3 py-3 rounded-2xl text-base sm:text-xl font-bold ${effetBouton}`}
+            className={`bg-red-600 shadow-lg shadow-red-500/20 text-white flex items-center justify-center px-3 py-3 rounded-2xl text-base sm:text-xl font-bold ${effetBouton}`}
           >
             Déconnexion
           </button>
@@ -99,15 +111,15 @@ const deconnexion = () => {
           Gris → pas arrivé
         </div>
 
-        <div className="bg-blue-600 text-white px-3 py-2 rounded-xl font-bold text-sm sm:text-base text-center">
+        <div className="bg-blue-600 shadow-lg shadow-blue-500/20 text-white px-3 py-2 rounded-xl font-bold text-sm sm:text-base text-center">
           Bleu → occupée
         </div>
 
-        <div className="bg-orange-500 text-white px-3 py-2 rounded-xl font-bold text-sm sm:text-base text-center">
+        <div className="bg-orange-500 shadow-lg shadow-orange-500/20 text-white px-3 py-2 rounded-xl font-bold text-sm sm:text-base text-center">
           Orange → commande
         </div>
 
-        <div className="bg-green-600 text-white px-3 py-2 rounded-xl font-bold text-sm sm:text-base text-center">
+        <div className="bg-green-600 shadow-lg shadow-green-500/20 text-white px-3 py-2 rounded-xl font-bold text-sm sm:text-base text-center">
           Vert → prête
         </div>
       </div>
@@ -136,7 +148,7 @@ const deconnexion = () => {
                   type="button"
                   className={`w-full ${couleurTable(
                     table
-                  )} text-white rounded-2xl p-4 sm:p-6 min-h-[120px] sm:min-h-[130px] ${effetBouton}`}
+                  )} text-white rounded-2xl p-4 sm:p-6 min-h-[120px] sm:min-h-[130px] transition-all duration-300 hover:scale-[1.02] ${effetBouton}`}
                 >
                   <div className="text-2xl sm:text-2xl font-bold">
                     Table {numero}
@@ -166,7 +178,7 @@ const deconnexion = () => {
                 <button
                   type="button"
                   onClick={() => setStatutTable(table, "libre")}
-                  className={`w-full bg-red-600 text-white rounded-xl py-3 text-base font-bold ${effetBouton}`}
+                  className={`w-full bg-red-600 shadow-lg shadow-red-500/20 text-white rounded-xl py-3 text-base font-bold ${effetBouton}`}
                 >
                   Libérer
                 </button>
@@ -174,7 +186,7 @@ const deconnexion = () => {
                 <button
                   type="button"
                   onClick={() => setStatutTable(table, "occupée")}
-                  className={`w-full bg-blue-600 text-white rounded-xl py-3 text-base font-bold ${effetBouton}`}
+                  className={`w-full bg-blue-600 shadow-lg shadow-blue-500/20 text-white rounded-xl py-3 text-base font-bold ${effetBouton}`}
                 >
                   Client arrivé
                 </button>
