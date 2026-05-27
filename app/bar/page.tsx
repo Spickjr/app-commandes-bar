@@ -12,6 +12,7 @@ export default function BarPage() {
 
   const [nouvellesCommandes, setNouvellesCommandes] = useState<number[]>([]);
   const anciennesCommandes = useRef<number[]>([]);
+  const premiereLecture = useRef(true);
 
   const effetBouton =
     "transition-all duration-150 active:scale-95 active:opacity-80";
@@ -27,7 +28,7 @@ export default function BarPage() {
       (id) => !anciennesCommandes.current.includes(id)
     );
 
-    if (anciennesCommandes.current.length > 0 && nouvelles.length > 0) {
+    if (!premiereLecture.current && nouvelles.length > 0) {
       setNouvellesCommandes(nouvelles);
 
       if (navigator.vibrate) {
@@ -38,7 +39,7 @@ export default function BarPage() {
         setNouvellesCommandes([]);
       }, 3000);
     }
-
+premiereLecture.current = false;
     anciennesCommandes.current = idsActuels;
   }, [commandesBar]);
 
