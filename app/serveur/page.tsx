@@ -34,9 +34,9 @@ export default function ServeurPage() {
           <Image
             src="/logo.png"
             alt="Of Course"
-            width={220}
-            height={220}
-            className="object-contain"
+            width={180}
+            height={180}
+            className="object-contain w-40 sm:w-52 h-auto"
             priority
           />
         </div>
