@@ -48,6 +48,13 @@ export default function Home() {
   const effetBouton =
     "transition-all duration-150 active:scale-95 active:opacity-80";
 
+  const deconnexion = () => {
+    localStorage.removeItem("serveur");
+    localStorage.removeItem("connecte");
+
+    router.push("/serveur");
+  };
+
   return (
     <main className="min-h-screen bg-black p-4 sm:p-6">
       <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
@@ -55,7 +62,7 @@ export default function Home() {
           Gestion des Tables
         </h1>
 
-        <div className="grid grid-cols-2 gap-3 sm:flex sm:gap-4">
+        <div className="grid grid-cols-3 gap-3 sm:flex sm:gap-4">
           <Link
             href="/dashboard"
             className={`bg-green-600 text-white text-center px-4 py-3 rounded-2xl text-lg sm:text-xl font-bold ${effetBouton}`}
@@ -69,6 +76,14 @@ export default function Home() {
           >
             Commandes
           </Link>
+
+          <button
+            type="button"
+            onClick={deconnexion}
+            className={`bg-red-600 text-white text-center px-4 py-3 rounded-2xl text-lg sm:text-xl font-bold ${effetBouton}`}
+          >
+            Déconnexion
+          </button>
         </div>
       </div>
 
