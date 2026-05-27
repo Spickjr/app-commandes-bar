@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 
 export default function ServeurPage() {
   const [nom, setNom] = useState("");
@@ -28,6 +29,18 @@ export default function ServeurPage() {
   return (
     <main className="min-h-screen bg-black text-white flex items-center justify-center p-6">
       <div className="bg-zinc-900 p-8 rounded-2xl w-full max-w-md">
+        
+        <div className="flex justify-center mb-6">
+          <Image
+            src="/logo.png"
+            alt="Of Course"
+            width={220}
+            height={220}
+            className="object-contain"
+            priority
+          />
+        </div>
+
         <h1 className="text-4xl font-bold mb-6 text-center">
           Connexion serveur
         </h1>
@@ -51,7 +64,7 @@ export default function ServeurPage() {
         <button
           type="button"
           onClick={enregistrerServeur}
-          className="w-full bg-orange-500 hover:bg-orange-600 py-4 rounded-xl text-xl font-bold"
+          className="w-full bg-orange-500 hover:bg-orange-600 py-4 rounded-xl text-xl font-bold transition-all duration-150 active:scale-95"
         >
           Se connecter
         </button>
