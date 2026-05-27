@@ -65,14 +65,14 @@ export default function Home() {
         <div className="grid grid-cols-3 gap-3 sm:flex sm:gap-4">
           <Link
             href="/dashboard"
-            className={`bg-green-600 text-white text-center px-4 py-3 rounded-2xl text-lg sm:text-xl font-bold ${effetBouton}`}
+            className={`bg-green-600 text-white flex items-center justify-center px-3 py-3 rounded-2xl text-base sm:text-xl font-bold ${effetBouton}`}
           >
             Dashboard
           </Link>
 
           <Link
             href="/bar"
-            className={`bg-orange-500 text-white text-center px-4 py-3 rounded-2xl text-lg sm:text-xl font-bold ${effetBouton}`}
+            className={`bg-orange-500 text-white flex items-center justify-center px-3 py-3 rounded-2xl text-base sm:text-xl font-bold ${effetBouton}`}
           >
             Commandes
           </Link>
@@ -80,7 +80,7 @@ export default function Home() {
           <button
             type="button"
             onClick={deconnexion}
-            className={`bg-red-600 text-white text-center px-4 py-3 rounded-2xl text-lg sm:text-xl font-bold ${effetBouton}`}
+            className={`bg-red-600 text-white flex items-center justify-center px-3 py-3 rounded-2xl text-base sm:text-xl font-bold ${effetBouton}`}
           >
             Déconnexion
           </button>
