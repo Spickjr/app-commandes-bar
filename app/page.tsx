@@ -39,21 +39,21 @@ export default function Home() {
     );
 
     if (commandeTable?.statut === "prête")
-      return "bg-green-600 shadow-lg shadow-green-500/20";
+      return "bg-green-600 shadow-[0_0_35px_rgba(34,197,94,0.7)]";
 
     if (commandeTable?.statut === "envoyée")
-      return "bg-orange-500 shadow-lg shadow-orange-500/20";
+      return "bg-orange-500 shadow-[0_0_35px_rgba(249,115,22,0.7)]";
 
     const statut = statutsTables[table];
 
     if (statut === "prete")
-      return "bg-green-600 shadow-lg shadow-green-500/20";
+      return "bg-green-600 shadow-[0_0_35px_rgba(34,197,94,0.7)]";
 
     if (statut === "commande")
-      return "bg-orange-500 shadow-lg shadow-orange-500/20";
+      return "bg-orange-500 shadow-[0_0_35px_rgba(249,115,22,0.7)]";
 
     if (statut === "occupée")
-      return "bg-blue-600 shadow-lg shadow-blue-500/20";
+      return "bg-blue-600 shadow-[0_0_35px_rgba(37,99,235,0.7)]";
 
     return "bg-zinc-800";
   };
@@ -84,14 +84,14 @@ export default function Home() {
         <div className="grid grid-cols-3 gap-3 sm:flex sm:gap-4">
           <Link
             href="/dashboard"
-            className={`bg-green-600 shadow-lg shadow-green-500/20 text-white flex items-center justify-center px-3 py-3 rounded-2xl text-base sm:text-xl font-bold ${effetBouton}`}
+            className={`bg-green-600 shadow-[0_0_35px_rgba(34,197,94,0.7)] text-white flex items-center justify-center px-3 py-3 rounded-2xl text-base sm:text-xl font-bold ${effetBouton}`}
           >
             Dashboard
           </Link>
 
           <Link
             href="/bar"
-            className={`bg-orange-500 shadow-lg shadow-orange-500/20 text-white flex items-center justify-center px-3 py-3 rounded-2xl text-base sm:text-xl font-bold ${effetBouton}`}
+            className={`bg-orange-500 shadow-[0_0_35px_rgba(249,115,22,0.7)] text-white flex items-center justify-center px-3 py-3 rounded-2xl text-base sm:text-xl font-bold ${effetBouton}`}
           >
             Commandes
           </Link>
@@ -99,7 +99,7 @@ export default function Home() {
           <button
             type="button"
             onClick={deconnexion}
-            className={`bg-red-600 shadow-lg shadow-red-500/20 text-white flex items-center justify-center px-3 py-3 rounded-2xl text-base sm:text-xl font-bold ${effetBouton}`}
+            className={`bg-red-600 shadow-[0_0_35px_rgba(220,38,38,0.7)] text-white flex items-center justify-center px-3 py-3 rounded-2xl text-base sm:text-xl font-bold ${effetBouton}`}
           >
             Déconnexion
           </button>
@@ -111,15 +111,15 @@ export default function Home() {
           Gris → pas arrivé
         </div>
 
-        <div className="bg-blue-600 shadow-lg shadow-blue-500/20 text-white px-3 py-2 rounded-xl font-bold text-sm sm:text-base text-center">
+        <div className="bg-blue-600 shadow-[0_0_35px_rgba(37,99,235,0.7)] text-white px-3 py-2 rounded-xl font-bold text-sm sm:text-base text-center">
           Bleu → occupée
         </div>
 
-        <div className="bg-orange-500 shadow-lg shadow-orange-500/20 text-white px-3 py-2 rounded-xl font-bold text-sm sm:text-base text-center">
+        <div className="bg-orange-500 shadow-[0_0_35px_rgba(249,115,22,0.7)] text-white px-3 py-2 rounded-xl font-bold text-sm sm:text-base text-center">
           Orange → commande
         </div>
 
-        <div className="bg-green-600 shadow-lg shadow-green-500/20 text-white px-3 py-2 rounded-xl font-bold text-sm sm:text-base text-center">
+        <div className="bg-green-600 shadow-[0_0_35px_rgba(34,197,94,0.7)] text-white px-3 py-2 rounded-xl font-bold text-sm sm:text-base text-center">
           Vert → prête
         </div>
       </div>
@@ -178,7 +178,7 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => setStatutTable(table, "libre")}
-                  className={`w-full bg-red-600 shadow-lg shadow-red-500/20 text-white rounded-xl py-3 text-base font-bold ${effetBouton}`}
+                  className={`w-full bg-red-600 shadow-[0_0_35px_rgba(220,38,38,0.7)] text-white rounded-xl py-3 text-base font-bold ${effetBouton}`}
                 >
                   Libérer
                 </button>
@@ -186,7 +186,7 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => setStatutTable(table, "occupée")}
-                  className={`w-full bg-blue-600 shadow-lg shadow-blue-500/20 text-white rounded-xl py-3 text-base font-bold ${effetBouton}`}
+                  className={`w-full bg-blue-600 shadow-[0_0_35px_rgba(37,99,235,0.7)] text-white rounded-xl py-3 text-base font-bold ${effetBouton}`}
                 >
                   Client arrivé
                 </button>
