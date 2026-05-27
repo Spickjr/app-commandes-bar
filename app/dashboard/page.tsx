@@ -15,6 +15,10 @@ export default function DashboardPage() {
   const effetBouton =
     "transition-all duration-150 active:scale-95 active:opacity-80";
 
+  const exporterPDF = () => {
+    window.print();
+  };
+
   const totalCommande = (
     items: { prix: number; quantite: number }[]
   ) =>
@@ -74,7 +78,7 @@ export default function DashboardPage() {
           Dashboard
         </h1>
 
-        <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:flex sm:flex-wrap sm:gap-4">
           <button
             type="button"
             onClick={() => {
@@ -91,6 +95,14 @@ export default function DashboardPage() {
             Vider
           </button>
 
+          <button
+            type="button"
+            onClick={exporterPDF}
+            className={`bg-blue-600 px-4 py-3 rounded-2xl font-bold text-base sm:text-lg ${effetBouton}`}
+          >
+            Export PDF
+          </button>
+
           <Link
             href="/bar"
             className={`bg-orange-500 text-center px-4 py-3 rounded-2xl font-bold text-base sm:text-lg ${effetBouton}`}
@@ -100,7 +112,7 @@ export default function DashboardPage() {
 
           <Link
             href="/"
-            className={`bg-zinc-700 text-center px-4 py-3 rounded-2xl font-bold text-base sm:text-lg col-span-2 sm:col-span-1 ${effetBouton}`}
+            className={`bg-zinc-700 text-center px-4 py-3 rounded-2xl font-bold text-base sm:text-lg ${effetBouton}`}
           >
             Tables
           </Link>
