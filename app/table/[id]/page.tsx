@@ -52,12 +52,12 @@ export default function TablePage() {
 
   const categories = {
   "Bières": [
-    { nom: "Bière", prix: 3 },
-    { nom: "Bière pêche", prix: 3 },
-    { nom: "Bière Citron", prix: 3 },
-    { nom: "Bières Fraise", prix: 3 },
     { nom: "Pichet de Bières", prix: 15 },
-    { nom: "Despé", prix: 5 },
+    { nom: "Bière", prix: 3 },
+    { nom: "Bière Citron", prix: 3 },
+    { nom: "Bière Fraise", prix: 3 },
+    { nom: "Bière pêche", prix: 3 },
+    { nom: "Despérados", prix: 5 },
     { nom: "Bud", prix: 4 },
     { nom: "Seau de despé (6 cannettes)", prix: 25 },
     { nom: "Seau de Bud (6 cannettes)", prix: 20 },
