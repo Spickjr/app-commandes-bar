@@ -51,35 +51,50 @@ export default function TablePage() {
   }, [infosExistantes]);
 
   const categories = {
-    Bières: [
-      { nom: "Bière", prix: 3 },
-      { nom: "Bière pêche", prix: 3 },
-      { nom: "Bière citron", prix: 3 },
-      { nom: "Bière fraise", prix: 3 },
-      { nom: "Pichet de bière", prix: 15 },
-      { nom: "Despé", prix: 5 },
-    ],
-    Vins: [
-      { nom: "Verre de vin blanc", prix: 2 },
-      { nom: "Verre de rosé", prix: 2 },
-      { nom: "Bouteille de vin blanc", prix: 15 },
-      { nom: "Bouteille de rosé", prix: 15 },
-    ],
-    Champagne: [
-      { nom: "Coupe de champagne", prix: 5 },
-      { nom: "Bouteille de champagne", prix: 40 },
-    ],
-    Softs: [
-      { nom: "Canette de coca", prix: 2 },
-      { nom: "Canette d’Ice Tea", prix: 2 },
-      { nom: "Canette de Perrier", prix: 2 },
-      { nom: "Bouteille d’eau", prix: 1 },
-    ],
-    Spiritueux: [
-      { nom: "Verre de Get 27", prix: 4 },
-      { nom: "Bouteille de Get 27", prix: 40 },
-    ],
-  };
+  "Bières": [
+    { nom: "Bière", prix: 3 },
+    { nom: "Bière pêche", prix: 3 },
+    { nom: "Bière Citron", prix: 3 },
+    { nom: "Bières Fraise", prix: 3 },
+    { nom: "Pichet de Bières", prix: 15 },
+    { nom: "Despé", prix: 5 },
+    { nom: "Bud", prix: 4 },
+    { nom: "Seau de despé (6 cannettes)", prix: 25 },
+    { nom: "Seau de Bud (6 cannettes)", prix: 20 },
+  ],
+
+  "Softs": [
+    { nom: "Cannette de Coca", prix: 2 },
+    { nom: "Cannette d'Ice Tea", prix: 2 },
+    { nom: "Cannette de Perrier", prix: 2 },
+    { nom: "Bouteille d'Eau", prix: 2 },
+  ],
+
+  "Spiritueux": [
+    { nom: "Verre de Get 27", prix: 4 },
+    { nom: "Bouteille de Get 27", prix: 40 },
+    { nom: "Bouteille de Bailey", prix: 40 },
+  ],
+
+  "Champagne": [
+    { nom: "Bouteille de Ruinard", prix: 100 },
+    { nom: "Bouteille de Deutz", prix: 80 },
+  ],
+
+  "Vin": [
+    { nom: "Verre de vin blanc", prix: 4 },
+    { nom: "Bouteille de vin blanc", prix: 35 },
+  ],
+
+  "Cocktails": [
+    { nom: "Verre de mojito", prix: 8 },
+    { nom: "Pichet de mojito", prix: 70 },
+    { nom: "Verre de Moscow Mule", prix: 8 },
+    { nom: "Pichet de Moscow Mule", prix: 70 },
+    { nom: "Verre de spritz", prix: 8 },
+    { nom: "Pichet de Spritz", prix: 70 },
+  ],
+};
 
   const boissons = categories[categorieActive as keyof typeof categories];
 
