@@ -26,7 +26,7 @@ export default function Home() {
     chargerTables();
   }, [router, chargerCommandes, chargerTables]);
 
-  const tables = Array.from({ length: 30 }, (_, i) => i + 1);
+  const tables = Array.from({ length: 40 }, (_, i) => i + 1);
 
   const serveur =
     typeof window !== "undefined"
