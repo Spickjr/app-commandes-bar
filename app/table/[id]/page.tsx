@@ -54,7 +54,6 @@ export default function TablePage() {
     Bières: [
       { nom: "Pichet de Bières", prix: 15 },
       { nom: "Bière", prix: 3 },
-      { nom: "Bière Citron", prix: 3 },
       { nom: "Bière Fraise", prix: 3 },
       { nom: "Bière pêche", prix: 3 },
       { nom: "Despérados", prix: 5 },
