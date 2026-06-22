@@ -77,8 +77,9 @@ export default function TablePage() {
   ],
 
   "Champagne": [
-    { nom: "Bouteille de Ruinard", prix: 100 },
-    { nom: "Bouteille de Deutz", prix: 80 },
+    { nom: "Bouteille de Ruinard BLANC DE BLANCS", prix: 150 },
+    { nom: "Bouteille de Reuinard BRUT", prix: 100 },
+    { nom: "Bouteille de Deutz BRUT", prix: 80 },
   ],
 
   "Vin": [
