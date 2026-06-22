@@ -51,51 +51,51 @@ export default function TablePage() {
   }, [infosExistantes]);
 
   const categories = {
-  "Bières": [
-    { nom: "Pichet de Bières", prix: 15 },
-    { nom: "Bière", prix: 3 },
-    { nom: "Bière Citron", prix: 3 },
-    { nom: "Bière Fraise", prix: 3 },
-    { nom: "Bière pêche", prix: 3 },
-    { nom: "Despérados", prix: 5 },
-    { nom: "Bud", prix: 4 },
-    { nom: "Seau de despé (6 cannettes)", prix: 25 },
-    { nom: "Seau de Bud (6 cannettes)", prix: 20 },
-  ],
+    Bières: [
+      { nom: "Pichet de Bières", prix: 15 },
+      { nom: "Bière", prix: 3 },
+      { nom: "Bière Citron", prix: 3 },
+      { nom: "Bière Fraise", prix: 3 },
+      { nom: "Bière pêche", prix: 3 },
+      { nom: "Despérados", prix: 5 },
+      { nom: "Bud", prix: 4 },
+      { nom: "Seau de despé (6 cannettes)", prix: 25 },
+      { nom: "Seau de Bud (6 cannettes)", prix: 20 },
+    ],
 
-  "Softs": [
-    { nom: "Cannette de Coca", prix: 2 },
-    { nom: "Cannette d'Ice Tea", prix: 2 },
-    { nom: "Cannette de Perrier", prix: 2 },
-    { nom: "Bouteille d'Eau", prix: 2 },
-  ],
+    Softs: [
+      { nom: "Cannette de Coca", prix: 2 },
+      { nom: "Cannette d'Ice Tea", prix: 2 },
+      { nom: "Cannette de Perrier", prix: 2 },
+      { nom: "Bouteille d'Eau", prix: 2 },
+    ],
 
-  "Spiritueux": [
-    { nom: "Verre de Get 27", prix: 4 },
-    { nom: "Bouteille de Get 27", prix: 40 },
-    { nom: "Bouteille de Bailey", prix: 40 },
-  ],
+    Spiritueux: [
+      { nom: "Verre de Get 27", prix: 4 },
+      { nom: "Bouteille de Get 27", prix: 40 },
+      { nom: "Bouteille de Bailey", prix: 40 },
+    ],
 
-  "Champagne": [
-    { nom: "Bouteille de Ruinard BLANC DE BLANCS", prix: 150 },
-    { nom: "Bouteille de Reuinard BRUT", prix: 100 },
-    { nom: "Bouteille de Deutz BRUT", prix: 80 },
-  ],
+    Champagne: [
+      { nom: 'Bouteille de Ruinard\n"Blanc de Blancs"', prix: 150 },
+      { nom: 'Bouteille de Ruinard\n"Brut"', prix: 100 },
+      { nom: 'Bouteille de Deutz\n"Brut"', prix: 80 },
+    ],
 
-  "Vin": [
-    { nom: "Verre de vin blanc", prix: 4 },
-    { nom: "Bouteille de vin blanc", prix: 35 },
-  ],
+    Vin: [
+      { nom: "Verre de vin blanc", prix: 4 },
+      { nom: "Bouteille de vin blanc", prix: 35 },
+    ],
 
-  "Cocktails": [
-    { nom: "Verre de mojito", prix: 8 },
-    { nom: "Pichet de mojito", prix: 70 },
-    { nom: "Verre de Moscow Mule", prix: 8 },
-    { nom: "Pichet de Moscow Mule", prix: 70 },
-    { nom: "Verre de spritz", prix: 8 },
-    { nom: "Pichet de Spritz", prix: 70 },
-  ],
-};
+    Cocktails: [
+      { nom: "Verre de mojito", prix: 8 },
+      { nom: "Pichet de mojito", prix: 70 },
+      { nom: "Verre de Moscow Mule", prix: 8 },
+      { nom: "Pichet de Moscow Mule", prix: 70 },
+      { nom: "Verre de spritz", prix: 8 },
+      { nom: "Pichet de Spritz", prix: 70 },
+    ],
+  };
 
   const boissons = categories[categorieActive as keyof typeof categories];
 
@@ -103,6 +103,21 @@ export default function TablePage() {
     (total, item) => total + item.prix * item.quantite,
     0
   );
+
+  const afficherNomBoisson = (nom: string) => {
+    return nom.split("\n").map((ligne, index) => (
+      <div
+        key={index}
+        className={
+          index === 0
+            ? "text-xl sm:text-2xl font-bold"
+            : "text-base sm:text-lg italic opacity-80 mt-2"
+        }
+      >
+        {ligne}
+      </div>
+    ));
+  };
 
   const ajouterBoisson = (boisson: { nom: string; prix: number }) => {
     setCommandes((ancienne) => {
@@ -249,9 +264,7 @@ export default function TablePage() {
             key={categorie}
             onClick={() => setCategorieActive(categorie)}
             className={`px-4 py-3 rounded-xl font-bold ${effetBouton} ${
-              categorieActive === categorie
-                ? "bg-orange-500"
-                : "bg-zinc-800"
+              categorieActive === categorie ? "bg-orange-500" : "bg-zinc-800"
             }`}
           >
             {categorie}
@@ -265,13 +278,11 @@ export default function TablePage() {
             type="button"
             key={boisson.nom}
             onClick={() => ajouterBoisson(boisson)}
-            className={`bg-orange-500 p-5 sm:p-6 rounded-2xl text-xl sm:text-2xl font-bold ${effetBouton}`}
+            className={`bg-orange-500 p-5 sm:p-6 rounded-2xl font-bold ${effetBouton}`}
           >
-            <div>{boisson.nom}</div>
+            <div>{afficherNomBoisson(boisson.nom)}</div>
 
-            <div className="text-base sm:text-lg mt-2">
-              {boisson.prix} €
-            </div>
+            <div className="text-base sm:text-lg mt-4">{boisson.prix} €</div>
           </button>
         ))}
       </div>
@@ -284,9 +295,8 @@ export default function TablePage() {
             key={item.nom}
             className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-zinc-800 p-4 rounded-xl mb-3"
           >
-            <p className="text-lg sm:text-xl break-words">
-              • {item.nom} x{item.quantite} —{" "}
-              {item.prix * item.quantite} €
+            <p className="text-lg sm:text-xl break-words whitespace-pre-line">
+              • {item.nom} x{item.quantite} — {item.prix * item.quantite} €
             </p>
 
             <div className="flex gap-2">
