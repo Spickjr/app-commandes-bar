@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import { useCommandeStore } from "../_lib/store";
 import { supabase } from "../_lib/supabase";
-import { carte } from "../_lib/styles";
+import { boutons, carte } from "../_lib/styles";
 import AlerteAttente from "../_components/AlerteAttente";
 import CommandeBar from "../_components/CommandeBar";
+import GestionRuptures from "../_components/GestionRuptures";
 import EnTete from "../_components/EnTete";
 import NavBas from "../_components/NavBas";
 
@@ -16,6 +17,8 @@ export default function BarPage() {
   const commandesBar = useCommandeStore((state) => state.commandesBar);
   const marquerPrete = useCommandeStore((state) => state.marquerPrete);
   const terminerCommande = useCommandeStore((state) => state.terminerCommande);
+  const nombreRuptures = useCommandeStore((state) => state.ruptures.length);
+  const [rupturesOuvert, setRupturesOuvert] = useState(false);
 
   const [nouvellesCommandes, setNouvellesCommandes] = useState<number[]>([]);
 
@@ -63,6 +66,17 @@ export default function BarPage() {
         surtitre="Bar"
         titre="Commandes"
         info={`${commandesBar.length} en cours`}
+        aDroite={
+          <button
+            type="button"
+            onClick={() => setRupturesOuvert(true)}
+            className={`h-9 rounded-full px-3.5 text-sm ${
+              nombreRuptures > 0 ? boutons.danger : boutons.secondaire
+            }`}
+          >
+            Ruptures{nombreRuptures > 0 ? ` · ${nombreRuptures}` : ""}
+          </button>
+        }
       />
 
       <AlerteAttente integree />
@@ -86,6 +100,10 @@ export default function BarPage() {
       </div>
 
       <NavBas />
+
+      {rupturesOuvert && (
+        <GestionRuptures onFermer={() => setRupturesOuvert(false)} />
+      )}
     </main>
   );
 }

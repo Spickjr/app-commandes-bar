@@ -6,6 +6,8 @@ import { IconeMoins, IconePlus, IconePoubelle } from "./Icones";
 
 type Props = {
   items: ItemCommande[];
+  // Boissons passées en rupture depuis leur ajout au panier.
+  ruptures: string[];
   envoiEnCours: boolean;
   onMoins: (nom: string) => void;
   onPlus: (item: ItemCommande) => void;
@@ -17,12 +19,14 @@ const boutonRond = `flex size-11 items-center justify-center rounded-full ${effe
 // Commande en préparation, collée en bas de l'écran de la table.
 export default function Panier({
   items,
+  ruptures,
   envoiEnCours,
   onMoins,
   onPlus,
   onEnvoyer,
 }: Props) {
   const nombre = nombreArticles(items);
+  const itemsEnRupture = items.filter((item) => ruptures.includes(item.nom));
 
   return (
     <div className="sticky bottom-0 z-10 -mx-5 mt-6 rounded-t-[28px] bg-carte px-5 pt-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-[0_-12px_32px_rgba(0,0,0,0.35)]">
@@ -44,9 +48,15 @@ export default function Panier({
                   <span className="truncate text-[15px] font-medium">
                     {nomSurUneLigne(item.nom)}
                   </span>
-                  <span className="text-[13px] text-doux">
-                    {item.prix} € l’unité
-                  </span>
+                  {ruptures.includes(item.nom) ? (
+                    <span className="text-[13px] font-semibold text-rouge">
+                      En rupture : à retirer
+                    </span>
+                  ) : (
+                    <span className="text-[13px] text-doux">
+                      {item.prix} € l’unité
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex shrink-0 items-center rounded-full bg-carte-2">
@@ -71,6 +81,7 @@ export default function Panier({
                     type="button"
                     aria-label="Ajouter un"
                     onClick={() => onPlus(item)}
+                    disabled={ruptures.includes(item.nom)}
                     className={boutonRond}
                   >
                     <IconePlus taille={18} />
@@ -97,10 +108,14 @@ export default function Panier({
         <button
           type="button"
           onClick={onEnvoyer}
-          disabled={items.length === 0 || envoiEnCours}
+          disabled={items.length === 0 || envoiEnCours || itemsEnRupture.length > 0}
           className={`mt-1.5 h-[54px] text-base ${boutons.principal}`}
         >
-          {envoiEnCours ? "Envoi…" : "Envoyer au bar"}
+          {envoiEnCours
+            ? "Envoi…"
+            : itemsEnRupture.length > 0
+              ? "Retire les boissons en rupture"
+              : "Envoyer au bar"}
         </button>
       </div>
     </div>

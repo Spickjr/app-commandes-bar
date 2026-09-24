@@ -52,6 +52,12 @@ type Store = {
   // false quand la dernière lecture Supabase a échoué (bandeau d'alerte).
   connexionOk: boolean;
 
+  // Boissons en rupture (noms de la carte), partagées entre appareils.
+  ruptures: string[];
+  // false tant que la table "ruptures" n'existe pas dans Supabase.
+  rupturesDisponibles: boolean;
+  basculerRupture: (nom: string) => Promise<void>;
+
   commandesBar: Commande[];
   historique: Commande[];
 
@@ -131,6 +137,24 @@ const lireCommandesEnCours = async () => {
   return { commandesBar: (data as LigneCommande[]).map(versCommande) };
 };
 
+// Codes renvoyés quand la table n'existe pas (pas encore créée dans Supabase).
+const TABLE_ABSENTE = ["PGRST205", "42P01"];
+
+const lireRuptures = async () => {
+  const { data, error } = await supabase.from("ruptures").select("nom");
+
+  if (error) {
+    return TABLE_ABSENTE.includes(error.code)
+      ? { ruptures: [], rupturesDisponibles: false }
+      : null;
+  }
+
+  return {
+    ruptures: (data as { nom: string }[]).map((r) => r.nom),
+    rupturesDisponibles: true,
+  };
+};
+
 const lireTables = async () => {
   const { data } = await supabase.from("tables").select("*");
 
@@ -191,6 +215,7 @@ const enregistrerTable = async (
 // Un seul abonnement par table Supabase, même si on change de page plusieurs fois.
 let canalCommandes: RealtimeChannel | null = null;
 let canalTables: RealtimeChannel | null = null;
+let canalRuptures: RealtimeChannel | null = null;
 
 // Plusieurs changements rapprochés (ex : commande + statut de table)
 // ne déclenchent qu'un seul rechargement.
@@ -259,8 +284,19 @@ export const useCommandeStore = create<Store>()((set, get) => {
     set(commandes ? { ...commandes, connexionOk: true } : { connexionOk: false });
   };
 
+  const rechargerRuptures = async () => {
+    const ruptures = await lireRuptures();
+    if (ruptures) set(ruptures);
+  };
+
   // (Re)crée les abonnements temps réel s'ils n'existent pas ou ont été perdus.
   const assurerTempsReel = () => {
+    if (!canalRuptures && get().rupturesDisponibles) {
+      canalRuptures = ecouter("ruptures-live", "ruptures", rechargerRuptures, () => {
+        canalRuptures = null;
+      });
+    }
+
     if (!canalTables) {
       canalTables = ecouter("tables-live", "tables", rechargerTables, () => {
         canalTables = null;
@@ -281,6 +317,26 @@ export const useCommandeStore = create<Store>()((set, get) => {
 
   return {
     connexionOk: true,
+    ruptures: [],
+    // Confirmé à la première lecture (évite de s'abonner à une table absente).
+    rupturesDisponibles: false,
+
+    basculerRupture: async (nom) => {
+      const enRupture = get().ruptures.includes(nom);
+
+      set((state) => ({
+        ruptures: enRupture
+          ? state.ruptures.filter((r) => r !== nom)
+          : [...state.ruptures, nom],
+      }));
+
+      const { error } = enRupture
+        ? await supabase.from("ruptures").delete().eq("nom", nom)
+        : await supabase.from("ruptures").insert({ nom });
+
+      if (error) await rechargerRuptures();
+    },
+
     commandesBar: [],
     historique: [],
     statutsTables: {},
@@ -332,8 +388,12 @@ export const useCommandeStore = create<Store>()((set, get) => {
     },
 
     synchroniser: async () => {
+      await Promise.all([
+        rechargerTables(),
+        rechargerCommandesEnCours(),
+        rechargerRuptures(),
+      ]);
       assurerTempsReel();
-      await Promise.all([rechargerTables(), rechargerCommandesEnCours()]);
     },
 
     ajouterCommande: async (table, serveur, items) => {
