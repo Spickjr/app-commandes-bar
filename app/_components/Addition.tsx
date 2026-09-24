@@ -17,13 +17,13 @@ type Props = {
   disponible: boolean;
   onEncaisser: (montant: number, mode: ModePaiement) => Promise<boolean>;
   onAnnulerPaiement: (id: number) => Promise<boolean>;
-  onLiberer: () => void;
 };
 
 const heure = (iso: string) =>
   new Date(iso).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
 
-// Addition d'une table : total, déjà payé, reste à payer, paiements.
+// Addition en cours d'une table : total, déjà payé, reste à payer, paiements.
+// Masquée dès qu'elle est soldée.
 export default function Addition({
   table,
   total,
@@ -35,48 +35,16 @@ export default function Addition({
   disponible,
   onEncaisser,
   onAnnulerPaiement,
-  onLiberer,
 }: Props) {
   const [ouvert, setOuvert] = useState(false);
-  const [details, setDetails] = useState(false);
-  const reglee = total > 0 && reste === 0;
 
-  if (total === 0 && paiements.length === 0) return null;
-
-  // Table réglée : une simple ligne pour ne pas prendre de place.
-  // L'encadré complet revient si la table recommande (reste > 0).
-  if (reglee && !details) {
-    return (
-      <div className="flex min-h-11 items-center gap-3 px-1 text-sm">
-        <span className="rounded-full bg-sauge/15 px-2.5 py-1 text-xs font-semibold text-sauge">
-          Réglée
-        </span>
-        <span className="grow text-doux">{formatEuros(total)} encaissés</span>
-        <button
-          type="button"
-          onClick={() => setDetails(true)}
-          className={`min-h-11 px-1 text-[13px] font-semibold text-doux hover:text-texte ${effetBouton}`}
-        >
-          Détails
-        </button>
-      </div>
-    );
-  }
+  // Rien à payer (addition soldée ou rien commandé) : on n'affiche rien,
+  // le montant encaissé est dans le Dashboard.
+  if (reste === 0) return null;
 
   return (
     <div className={`flex flex-col gap-3 p-4 ${carte}`}>
-      <div className="flex items-center justify-between gap-3">
-        <span className="text-[17px] font-semibold">Addition</span>
-        {reglee && (
-          <button
-            type="button"
-            onClick={() => setDetails(false)}
-            className={`min-h-9 text-[13px] font-semibold text-doux hover:text-texte ${effetBouton}`}
-          >
-            Réduire
-          </button>
-        )}
-      </div>
+      <span className="text-[17px] font-semibold">Addition</span>
 
       <div className="grid grid-cols-3 gap-2 text-center">
         <div className="flex flex-col gap-0.5 rounded-2xl bg-carte-2/60 py-2.5">
@@ -130,14 +98,6 @@ export default function Addition({
           Encaissement pas encore activé : la table « paiements » doit être créée
           dans Supabase.
         </p>
-      ) : reglee ? (
-        <button
-          type="button"
-          onClick={onLiberer}
-          className={`h-12 text-[15px] ${boutons.secondaire}`}
-        >
-          Libérer la table
-        </button>
       ) : (
         <button
           type="button"

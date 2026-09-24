@@ -8,7 +8,7 @@ type Props = {
   numero: number;
   etat: EtatTable;
   infos?: InfosTable;
-  // Reste à payer (null si la table n'a rien commandé).
+  // Reste à payer de l'addition en cours (rien n'est affiché à 0).
   reste?: number | null;
   onClientArrive: () => void;
   onLiberer: () => void;
@@ -57,13 +57,9 @@ export default function CaseTable({
           </div>
         )}
 
-        {!libre && reste !== null && (
-          <div
-            className={`text-[13px] font-semibold ${
-              reste > 0 ? "text-ambre" : "text-sauge"
-            }`}
-          >
-            {reste > 0 ? `À régler ${formatEuros(reste)}` : "Réglée"}
+        {!libre && reste !== null && reste > 0 && (
+          <div className="text-[13px] font-semibold text-ambre">
+            À régler {formatEuros(reste)}
           </div>
         )}
       </Link>
