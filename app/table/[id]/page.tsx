@@ -6,7 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { ItemCommande, useCommandeStore } from "../../_lib/store";
 import { CARTE, CATEGORIES, Categorie } from "../../_lib/carte";
 import { NUMEROS_TABLES, nomTable } from "../../_lib/config";
-import { useServeur } from "../../_lib/session";
+import { useAcces, useServeur } from "../../_lib/session";
 import { ajouterAuPanier, enleverUnDuPanier } from "../../_lib/panier";
 import { STYLE_ETAT, etatTable } from "../../_lib/tables";
 import { boutons, effetBouton } from "../../_lib/styles";
@@ -23,6 +23,7 @@ export default function TablePage() {
   const tableNom = nomTable(params.id as string);
 
   const serveur = useServeur();
+  const autorise = useAcces("serveur");
   const [panier, setPanier] = useState<ItemCommande[]>([]);
   const [categorieActive, setCategorieActive] = useState<Categorie>("Bières");
   const [envoiEnCours, setEnvoiEnCours] = useState(false);
@@ -88,6 +89,8 @@ export default function TablePage() {
       setEnvoiEnCours(false);
     }
   };
+
+  if (!autorise) return null;
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col px-5">

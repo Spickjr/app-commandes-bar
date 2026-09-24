@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useCommandeStore } from "./_lib/store";
 import { NUMEROS_TABLES, nomTable } from "./_lib/config";
-import { deconnecterServeur, lireServeur, useServeur } from "./_lib/session";
+import { deconnecterServeur, useAcces, useServeur } from "./_lib/session";
 import { STYLE_ETAT, etatTable } from "./_lib/tables";
 import CaseTable from "./_components/CaseTable";
 import EnTete from "./_components/EnTete";
@@ -20,16 +19,14 @@ export default function Home() {
   const infosTables = useCommandeStore((state) => state.infosTables);
   const setStatutTable = useCommandeStore((state) => state.setStatutTable);
 
-  useEffect(() => {
-    if (!lireServeur()) {
-      router.push("/serveur");
-    }
-  }, [router]);
+  const autorise = useAcces("serveur");
 
   const deconnexion = () => {
     deconnecterServeur();
     router.push("/serveur");
   };
+
+  if (!autorise) return null;
 
   return (
     <main className="mx-auto w-full max-w-6xl px-5 pb-28">

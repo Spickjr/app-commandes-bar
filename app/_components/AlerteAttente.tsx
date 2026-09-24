@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useCommandeStore } from "../_lib/store";
 import { ALERTE_ATTENTE_MINUTES } from "../_lib/config";
 import { estEnRetard, useMaintenant } from "../_lib/temps";
+import { useRole } from "../_lib/session";
 
 // Message affiché quand des commandes attendent depuis plus de
 // ALERTE_ATTENTE_MINUTES sans être prêtes. Fixé en haut de l'écran partout,
@@ -15,6 +16,7 @@ export default function AlerteAttente({ integree = false }: { integree?: boolean
   const connexionOk = useCommandeStore((state) => state.connexionOk);
   const maintenant = useMaintenant();
   const chemin = usePathname();
+  const role = useRole();
 
   const surLeBar = chemin === "/bar";
   const actif =
@@ -48,22 +50,23 @@ export default function AlerteAttente({ integree = false }: { integree?: boolean
       ? `Commande en attente depuis plus de ${ALERTE_ATTENTE_MINUTES} min`
       : `${enRetard.length} commandes en attente depuis plus de ${ALERTE_ATTENTE_MINUTES} min`;
 
-  return (
-    <Link
-      href="/bar"
-      role="alert"
-      className={`flex items-center gap-3 rounded-2xl border border-rouge-bord bg-carte px-4 py-3 ${
-        integree
-          ? "mt-5"
-          : `fixed inset-x-3 z-30 mx-auto max-w-md shadow-xl shadow-black/50 ${
-              // Au-dessus de la barre du bas ; en haut sur la page d'une table
-              // (le panier occupe le bas).
-              chemin.startsWith("/table/")
-                ? "top-[max(0.75rem,env(safe-area-inset-top))]"
-                : "bottom-[calc(5.75rem+env(safe-area-inset-bottom))]"
-            }`
-      }`}
-    >
+  // Les serveurs voient l'alerte mais n'ont pas accès à l'écran du bar.
+  const lienVersBar = role === "bar" && !integree;
+
+  const classes = `flex items-center gap-3 rounded-2xl border border-rouge-bord bg-carte px-4 py-3 ${
+    integree
+      ? "mt-5"
+      : `fixed inset-x-3 z-30 mx-auto max-w-md shadow-xl shadow-black/50 ${
+          // Au-dessus de la barre du bas ; en haut sur la page d'une table
+          // (le panier occupe le bas).
+          chemin.startsWith("/table/")
+            ? "top-[max(0.75rem,env(safe-area-inset-top))]"
+            : "bottom-[calc(5.75rem+env(safe-area-inset-bottom))]"
+        }`
+  }`;
+
+  const contenu = (
+    <>
       <span className="size-2.5 shrink-0 animate-pulse rounded-full bg-rouge" />
       <span className="flex min-w-0 grow flex-col">
         <span className="text-[15px] font-semibold text-rouge">{message}</span>
@@ -71,11 +74,21 @@ export default function AlerteAttente({ integree = false }: { integree?: boolean
           Table{enRetard.length > 1 ? "s" : ""} {tables}
         </span>
       </span>
-      {!integree && (
+      {lienVersBar && (
         <span className="shrink-0 text-[13px] font-semibold text-texte">
           Voir
         </span>
       )}
+    </>
+  );
+
+  return lienVersBar ? (
+    <Link href="/bar" role="alert" className={classes}>
+      {contenu}
     </Link>
+  ) : (
+    <div role="alert" className={classes}>
+      {contenu}
+    </div>
   );
 }

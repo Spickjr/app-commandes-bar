@@ -2,22 +2,37 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { IconeCommandes, IconeDashboard, IconeTables } from "./Icones";
+import { useRole, type Role } from "../_lib/session";
+import {
+  IconeCommandes,
+  IconeDashboard,
+  IconeHistorique,
+  IconeTables,
+} from "./Icones";
 
-const LIENS = [
-  { href: "/", label: "Tables", Icone: IconeTables },
-  { href: "/bar", label: "Commandes", Icone: IconeCommandes },
-  { href: "/dashboard", label: "Dashboard", Icone: IconeDashboard },
-];
+// Onglets visibles selon le profil connecté.
+const LIENS: Record<Role, { href: string; label: string; Icone: typeof IconeTables }[]> = {
+  serveur: [
+    { href: "/", label: "Tables", Icone: IconeTables },
+    { href: "/historique", label: "Historique", Icone: IconeHistorique },
+  ],
+  bar: [
+    { href: "/bar", label: "Commandes", Icone: IconeCommandes },
+    { href: "/dashboard", label: "Dashboard", Icone: IconeDashboard },
+  ],
+};
 
 // Barre de navigation fixée en bas de l'écran.
 export default function NavBas() {
   const chemin = usePathname();
+  const role = useRole();
+
+  if (!role) return null;
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-carte-2 bg-fond pb-[env(safe-area-inset-bottom)]">
       <div className="mx-auto flex h-20 max-w-md items-center justify-around px-5 pb-2">
-        {LIENS.map(({ href, label, Icone }) => {
+        {LIENS[role].map(({ href, label, Icone }) => {
           const actif = chemin === href;
 
           return (
