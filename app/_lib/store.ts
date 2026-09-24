@@ -25,6 +25,8 @@ export type Commande = {
   serveur: string;
   items: ItemCommande[];
   statut: StatutCommande;
+  // Date d'envoi au bar (ISO), pour le chrono d'attente.
+  creeLe: string;
 };
 
 // Lignes telles qu'elles sont stockées dans Supabase.
@@ -34,6 +36,7 @@ type LigneCommande = {
   serveur: string;
   items: ItemCommande[];
   statut: StatutCommande;
+  created_at: string;
 };
 
 type LigneTable = {
@@ -71,6 +74,9 @@ type Store = {
   // Rafraîchissement léger : tables + commandes en cours.
   synchroniser: () => Promise<void>;
 
+  // Déplace le client (infos, statut, commandes en cours) vers une table libre.
+  transfererTable: (source: string, destination: string) => Promise<void>;
+
   marquerPrete: (id: number) => Promise<void>;
   terminerCommande: (id: number) => Promise<void>;
 
@@ -93,6 +99,7 @@ const versCommande = (c: LigneCommande): Commande => ({
   serveur: c.serveur,
   items: c.items,
   statut: c.statut,
+  creeLe: c.created_at,
 });
 
 const lireToutesCommandes = async () => {
@@ -346,6 +353,70 @@ export const useCommandeStore = create<Store>()((set, get) => {
       }
 
       await rechargerCommandesEnCours();
+    },
+
+    transfererTable: async (source, destination) => {
+      const { statutsTables, infosTables } = get();
+      const infos = infosTables[source] || INFOS_VIDES;
+      const statut =
+        statutsTables[source] && statutsTables[source] !== "libre"
+          ? statutsTables[source]
+          : "occupée";
+
+      set((state) => ({
+        statutsTables: {
+          ...state.statutsTables,
+          [destination]: statut,
+          [source]: "libre",
+        },
+        infosTables: {
+          ...state.infosTables,
+          [destination]: infos,
+          [source]: INFOS_VIDES,
+        },
+        commandesBar: state.commandesBar.map((c) =>
+          c.table === source ? { ...c, table: destination } : c
+        ),
+      }));
+
+      const [okDestination, okSource, { error }] = await Promise.all([
+        enregistrerTable(
+          destination,
+          {
+            statut,
+            nom_client: infos.nom,
+            telephone: infos.telephone,
+            personnes: infos.personnes,
+            note: infos.note,
+          },
+          statut,
+          infos
+        ),
+        enregistrerTable(
+          source,
+          {
+            statut: "libre",
+            nom_client: "",
+            telephone: "",
+            personnes: 0,
+            note: "",
+          },
+          "libre",
+          INFOS_VIDES
+        ),
+        // Seules les commandes en cours suivent le client ; l'historique
+        // reste sur la table où il a été servi.
+        supabase
+          .from("commandes")
+          .update({ table_name: destination })
+          .eq("table_name", source)
+          .neq("statut", "terminée"),
+      ]);
+
+      if (!okDestination || !okSource || error) {
+        await Promise.all([rechargerTables(), rechargerToutesCommandes()]);
+        throw new Error("Transfert incomplet");
+      }
     },
 
     marquerPrete: async (id) => {

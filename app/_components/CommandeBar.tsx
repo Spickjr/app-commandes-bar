@@ -1,7 +1,9 @@
 import type { Commande } from "../_lib/store";
 import { nomSurUneLigne } from "../_lib/carte";
+import { ALERTE_ATTENTE_MINUTES } from "../_lib/config";
 import { totalItems } from "../_lib/calculs";
 import { boutons } from "../_lib/styles";
+import { attenteMs, estEnRetard, formatChrono, useMaintenant } from "../_lib/temps";
 
 type Props = {
   commande: Commande;
@@ -20,12 +22,20 @@ export default function CommandeBar({
   onRecuperee,
 }: Props) {
   const prete = commande.statut === "prête";
+  const maintenant = useMaintenant();
+  const enRetard = estEnRetard(commande, maintenant);
 
   return (
     <div
       className={`flex flex-col gap-3 rounded-[20px] border p-4 transition-colors duration-500 ${
         prete ? "bg-sauge-fond" : "bg-carte"
-      } ${nouvelle ? "border-ambre-vif" : "border-transparent"}`}
+      } ${
+        enRetard
+          ? "border-rouge"
+          : nouvelle
+            ? "border-ambre-vif"
+            : "border-transparent"
+      }`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-col gap-0.5">
@@ -37,6 +47,17 @@ export default function CommandeBar({
           </span>
         </div>
 
+        {!prete && maintenant > 0 && (
+          <span
+            className={`ml-auto font-semibold tabular-nums ${
+              enRetard ? "text-rouge" : "text-doux"
+            } text-sm`}
+            aria-label="Temps d’attente"
+          >
+            {formatChrono(attenteMs(commande, maintenant))}
+          </span>
+        )}
+
         {nouvelle ? (
           <span className={`${pastille} bg-ambre/15 text-ambre`}>Nouvelle</span>
         ) : prete ? (
@@ -45,6 +66,12 @@ export default function CommandeBar({
           <span className={`${pastille} bg-bouton text-clair`}>Envoyée</span>
         )}
       </div>
+
+      {enRetard && (
+        <p className="-mt-1 text-[13px] font-semibold text-rouge">
+          En attente depuis plus de {ALERTE_ATTENTE_MINUTES} minutes
+        </p>
+      )}
 
       <div className="flex flex-col gap-1.5 text-[15px]">
         {commande.items.map((item, index) => (

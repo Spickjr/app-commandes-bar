@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { DM_Sans } from "next/font/google";
 import "./globals.css";
+import AlerteAttente from "./_components/AlerteAttente";
 import Synchro from "./_components/Synchro";
 
 const dmSans = DM_Sans({
@@ -30,6 +31,7 @@ export default function RootLayout({
     <html lang="fr" className={`${dmSans.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col font-sans">
         <Synchro />
+        <AlerteAttente />
         {children}
       </body>
     </html>
