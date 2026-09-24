@@ -4,19 +4,26 @@ import { useState } from "react";
 import Image from "next/image";
 import { MOT_DE_PASSE_APP } from "../_lib/config";
 import { connecterServeur } from "../_lib/session";
+import { boutons } from "../_lib/styles";
+
+const champ =
+  "h-[54px] w-full rounded-[14px] border border-ligne bg-carte px-4 text-[17px] text-texte outline-none focus:border-doux";
 
 export default function ServeurPage() {
   const [nom, setNom] = useState("");
   const [motDePasse, setMotDePasse] = useState("");
+  const [erreur, setErreur] = useState("");
 
-  const enregistrerServeur = () => {
+  const enregistrerServeur = (e: React.FormEvent) => {
+    e.preventDefault();
+
     if (!nom.trim()) {
-      alert("Entre un nom de serveur.");
+      setErreur("Entre ton prénom.");
       return;
     }
 
     if (motDePasse !== MOT_DE_PASSE_APP) {
-      alert("Mot de passe incorrect.");
+      setErreur("Mot de passe incorrect.");
       return;
     }
 
@@ -26,46 +33,67 @@ export default function ServeurPage() {
   };
 
   return (
-    <main className="min-h-screen bg-black text-white flex items-center justify-center p-6">
-      <div className="bg-zinc-900 p-8 rounded-2xl w-full max-w-md">
-        <div className="flex justify-center mb-6">
+    <main className="flex min-h-dvh items-center justify-center px-6 py-10">
+      <div className="flex w-full max-w-sm flex-col gap-10">
+        <div className="flex flex-col items-center gap-5">
           <Image
             src="/logo.png"
-            alt="Of Course"
-            width={180}
-            height={180}
-            className="object-contain w-40 sm:w-52 h-auto"
+            alt="Of Course !"
+            width={200}
+            height={46}
+            className="h-auto w-[200px] opacity-90"
             priority
           />
+
+          <div className="flex flex-col items-center gap-1.5 text-center">
+            <h1 className="text-[28px] font-semibold tracking-[-0.03em]">
+              Bonsoir
+            </h1>
+            <p className="text-[15px] text-doux">
+              Connecte-toi pour prendre les commandes.
+            </p>
+          </div>
         </div>
 
-        <h1 className="text-4xl font-bold mb-6 text-center">
-          Connexion serveur
-        </h1>
+        <form onSubmit={enregistrerServeur} className="flex flex-col gap-4">
+          <label className="flex flex-col gap-2 text-sm font-medium text-doux">
+            Prénom
+            <input
+              type="text"
+              autoComplete="given-name"
+              value={nom}
+              onChange={(e) => {
+                setNom(e.target.value);
+                setErreur("");
+              }}
+              className={champ}
+            />
+          </label>
 
-        <input
-          type="text"
-          placeholder="Nom du serveur"
-          value={nom}
-          onChange={(e) => setNom(e.target.value)}
-          className="w-full bg-zinc-800 text-white px-4 py-4 rounded-xl text-xl mb-4"
-        />
+          <label className="flex flex-col gap-2 text-sm font-medium text-doux">
+            Mot de passe
+            <input
+              type="password"
+              inputMode="numeric"
+              value={motDePasse}
+              onChange={(e) => {
+                setMotDePasse(e.target.value);
+                setErreur("");
+              }}
+              className={champ}
+            />
+          </label>
 
-        <input
-          type="password"
-          placeholder="Mot de passe"
-          value={motDePasse}
-          onChange={(e) => setMotDePasse(e.target.value)}
-          className="w-full bg-zinc-800 text-white px-4 py-4 rounded-xl text-xl mb-6"
-        />
+          {erreur && (
+            <p role="alert" className="text-sm font-medium text-rouge">
+              {erreur}
+            </p>
+          )}
 
-        <button
-          type="button"
-          onClick={enregistrerServeur}
-          className="w-full bg-orange-500 hover:bg-orange-600 py-4 rounded-xl text-xl font-bold transition-all duration-150 active:scale-95"
-        >
-          Se connecter
-        </button>
+          <button type="submit" className={`mt-2 h-[54px] text-base ${boutons.principal}`}>
+            Se connecter
+          </button>
+        </form>
       </div>
     </main>
   );

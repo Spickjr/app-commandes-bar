@@ -1,12 +1,15 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect } from "react";
 import { useCommandeStore } from "../_lib/store";
+import { nomSurUneLigne } from "../_lib/carte";
 import { grouperParTable, statistiquesSoiree } from "../_lib/calculs";
 import { genererRapportPDF } from "../_lib/rapport";
-import { effetBouton } from "../_lib/styles";
+import { boutons, carte } from "../_lib/styles";
+import EnTete from "../_components/EnTete";
 import HistoriqueTable from "../_components/HistoriqueTable";
+import { IconeTelecharger } from "../_components/Icones";
+import NavBas from "../_components/NavBas";
 
 export default function DashboardPage() {
   const historique = useCommandeStore((state) => state.historique);
@@ -21,19 +24,46 @@ export default function DashboardPage() {
 
   const stats = statistiquesSoiree(historique);
   const historiqueParTable = grouperParTable(historique);
-
-  const blocStat = [
-    { label: "Total soirée", valeur: `${stats.totalSoiree} €` },
-    { label: "Commandes terminées", valeur: stats.nombreCommandes },
-    { label: "Boissons vendues", valeur: stats.totalBoissons },
-  ];
+  const quantiteMax = stats.ventesParBoisson[0]?.quantite || 1;
 
   return (
-    <main className="min-h-screen bg-black text-white p-4 sm:p-6">
-      <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-4xl font-bold">Dashboard</h1>
+    <main className="mx-auto w-full max-w-3xl px-5 pb-28">
+      <EnTete surtitre="Soirée en cours" titre="Dashboard" />
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:flex sm:flex-wrap sm:gap-4">
+      <div className="mt-5 flex flex-col gap-3">
+        <div className={`flex flex-col gap-1 p-[18px] ${carte}`}>
+          <span className="text-sm text-doux">Chiffre d’affaires</span>
+          <span className="text-[40px] font-semibold leading-tight tracking-[-0.03em]">
+            {stats.totalSoiree} €
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className={`flex flex-col gap-1 p-4 ${carte}`}>
+            <span className="text-sm text-doux">Commandes</span>
+            <span className="text-[26px] font-semibold tracking-[-0.02em]">
+              {stats.nombreCommandes}
+            </span>
+          </div>
+
+          <div className={`flex flex-col gap-1 p-4 ${carte}`}>
+            <span className="text-sm text-doux">Boissons</span>
+            <span className="text-[26px] font-semibold tracking-[-0.02em]">
+              {stats.totalBoissons}
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => genererRapportPDF(stats)}
+            className={`h-12 text-[15px] ${boutons.secondaire}`}
+          >
+            <IconeTelecharger taille={18} />
+            Rapport PDF
+          </button>
+
           <button
             type="button"
             onClick={() => {
@@ -41,83 +71,63 @@ export default function DashboardPage() {
                 viderHistorique();
               }
             }}
-            className={`bg-red-700 px-4 py-3 rounded-2xl font-bold text-base sm:text-lg ${effetBouton}`}
+            className={`h-12 text-[15px] ${boutons.danger}`}
           >
-            Vider
+            Vider l’historique
           </button>
+        </div>
 
-          <button
-            type="button"
-            onClick={() => genererRapportPDF(stats)}
-            className={`bg-blue-600 px-4 py-3 rounded-2xl font-bold text-base sm:text-lg ${effetBouton}`}
-          >
-            Rapport PDF
-          </button>
+        <div className={`flex flex-col gap-3.5 p-[18px] ${carte}`}>
+          <span className="text-base font-semibold">Top boissons</span>
 
-          <Link
-            href="/bar"
-            className={`bg-orange-500 text-center px-4 py-3 rounded-2xl font-bold text-base sm:text-lg ${effetBouton}`}
-          >
-            Commandes
-          </Link>
+          {stats.ventesParBoisson.length === 0 ? (
+            <p className="text-[15px] text-doux">Aucune vente pour le moment.</p>
+          ) : (
+            stats.ventesParBoisson.map((vente) => (
+              <div key={vente.nom} className="flex flex-col gap-1.5">
+                <div className="flex justify-between gap-3 text-[15px]">
+                  <span className="break-words">{nomSurUneLigne(vente.nom)}</span>
+                  <span className="shrink-0 text-doux">
+                    × {vente.quantite} · {vente.total} €
+                  </span>
+                </div>
 
-          <Link
-            href="/"
-            className={`bg-zinc-700 text-center px-4 py-3 rounded-2xl font-bold text-base sm:text-lg ${effetBouton}`}
-          >
-            Tables
-          </Link>
+                <div className="h-1.5 rounded-full bg-carte-2">
+                  <div
+                    className="h-1.5 rounded-full bg-clair"
+                    style={{ width: `${(vente.quantite / quantiteMax) * 100}%` }}
+                  />
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className={`flex flex-col ${carte}`}>
+          <span className="px-[18px] pt-[18px] pb-1.5 text-base font-semibold">
+            Historique par table
+          </span>
+
+          {historique.length === 0 ? (
+            <p className="px-[18px] pb-[18px] text-[15px] text-doux">
+              Aucune commande terminée.
+            </p>
+          ) : (
+            <div className="pb-1">
+              {Object.entries(historiqueParTable).map(([table, commandes]) => (
+                <HistoriqueTable
+                  key={table}
+                  table={table}
+                  commandes={commandes}
+                  onEffacer={supprimerHistorique}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 mb-6 sm:grid-cols-3">
-        {blocStat.map(({ label, valeur }) => (
-          <div key={label} className="bg-zinc-900 rounded-2xl p-5">
-            <p className="text-zinc-400 text-sm sm:text-base">{label}</p>
-            <p className="text-4xl font-bold mt-2">{valeur}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className="bg-zinc-900 rounded-2xl p-5 mb-6">
-        <h2 className="text-2xl font-bold mb-4">Top boissons</h2>
-
-        {stats.ventesParBoisson.length === 0 ? (
-          <p className="text-zinc-400">Aucune vente pour le moment.</p>
-        ) : (
-          <div className="space-y-3">
-            {stats.ventesParBoisson.map((vente, index) => (
-              <div
-                key={vente.nom}
-                className="flex justify-between gap-3 bg-zinc-800 rounded-xl p-4 text-base sm:text-xl"
-              >
-                <span className="break-words">
-                  #{index + 1} — {vente.nom}
-                </span>
-
-                <span className="font-bold shrink-0">
-                  x{vente.quantite} — {vente.total} €
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <h2 className="text-2xl sm:text-3xl font-bold mb-4">
-        Historique par table
-      </h2>
-
-      <div className="space-y-6">
-        {Object.entries(historiqueParTable).map(([table, commandes]) => (
-          <HistoriqueTable
-            key={table}
-            table={table}
-            commandes={commandes}
-            onEffacer={supprimerHistorique}
-          />
-        ))}
-      </div>
+      <NavBas />
     </main>
   );
 }

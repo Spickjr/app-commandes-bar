@@ -16,3 +16,38 @@ export const etatTable = (
 
   return "libre";
 };
+
+// Libellés et couleurs de chaque état.
+export const STYLE_ETAT: Record<
+  EtatTable,
+  { label: string; fond: string; pastille: string; point: string; bord: string }
+> = {
+  libre: {
+    label: "Libre",
+    fond: "bg-carte",
+    pastille: "text-doux",
+    point: "bg-[#5e5e67]",
+    bord: "border-transparent",
+  },
+  occupee: {
+    label: "Occupée",
+    fond: "bg-bleu-fond",
+    pastille: "text-bleu bg-bleu/15",
+    point: "bg-bleu",
+    bord: "border-bleu-bord",
+  },
+  commande: {
+    label: "Commande",
+    fond: "bg-ambre-fond",
+    pastille: "text-ambre bg-ambre/15",
+    point: "bg-ambre",
+    bord: "border-ambre-bord",
+  },
+  prete: {
+    label: "Prête",
+    fond: "bg-sauge-fond",
+    pastille: "text-sauge bg-sauge/15",
+    point: "bg-sauge",
+    bord: "border-sauge-bord",
+  },
+};

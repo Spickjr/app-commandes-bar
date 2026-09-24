@@ -57,3 +57,6 @@ export const CARTE = {
 export type Categorie = keyof typeof CARTE;
 
 export const CATEGORIES = Object.keys(CARTE) as Categorie[];
+
+// Nom affiché sur une seule ligne (panier, bar, dashboard).
+export const nomSurUneLigne = (nom: string) => nom.replace(/\n/g, " ");

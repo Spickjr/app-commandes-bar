@@ -1,6 +1,7 @@
 import type { Commande } from "../_lib/store";
+import { nomSurUneLigne } from "../_lib/carte";
 import { totalItems } from "../_lib/calculs";
-import { effetBouton } from "../_lib/styles";
+import { boutons } from "../_lib/styles";
 
 type Props = {
   commande: Commande;
@@ -9,6 +10,8 @@ type Props = {
   onRecuperee: () => void;
 };
 
+const pastille = "rounded-full px-2.5 py-1 text-xs font-semibold";
+
 // Carte d'une commande en cours sur l'écran du bar.
 export default function CommandeBar({
   commande,
@@ -16,70 +19,82 @@ export default function CommandeBar({
   onPrete,
   onRecuperee,
 }: Props) {
+  const prete = commande.statut === "prête";
+
   return (
     <div
-      className={`relative rounded-2xl p-4 sm:p-6 transition-all duration-500 ${
-        nouvelle
-          ? "bg-orange-500 animate-pulse scale-[1.02] ring-4 ring-orange-300"
-          : "bg-zinc-900"
-      }`}
+      className={`flex flex-col gap-3 rounded-[20px] border p-4 transition-colors duration-500 ${
+        prete ? "bg-sauge-fond" : "bg-carte"
+      } ${nouvelle ? "border-ambre-vif" : "border-transparent"}`}
     >
-      {nouvelle && (
-        <div className="absolute top-3 right-3 bg-black text-orange-400 px-3 py-1 rounded-full text-sm font-black">
-          NEW
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-xl font-semibold tracking-[-0.02em]">
+            {commande.table}
+          </span>
+          <span className="text-[13px] text-doux">
+            {commande.serveur || "Serveur non renseigné"}
+          </span>
         </div>
-      )}
 
-      <h2 className="text-2xl font-bold mb-1">{commande.table}</h2>
+        {nouvelle ? (
+          <span className={`${pastille} bg-ambre/15 text-ambre`}>Nouvelle</span>
+        ) : prete ? (
+          <span className={`${pastille} bg-sauge/15 text-sauge`}>Prête</span>
+        ) : (
+          <span className={`${pastille} bg-bouton text-clair`}>Envoyée</span>
+        )}
+      </div>
 
-      <p className="text-white text-base sm:text-lg font-bold mb-4">
-        Serveur : {commande.serveur || "Non renseigné"}
-      </p>
-
-      <div className="mb-4 space-y-2">
+      <div className="flex flex-col gap-1.5 text-[15px]">
         {commande.items.map((item, index) => (
-          <div
-            key={index}
-            className="flex justify-between gap-3 bg-black/20 rounded-xl p-3 text-base sm:text-xl"
-          >
+          <div key={index} className="flex justify-between gap-3">
             <span className="break-words">
-              {item.nom} x{item.quantite}
+              {item.quantite} × {nomSurUneLigne(item.nom)}
             </span>
-
-            <span className="font-bold shrink-0">
+            <span className="shrink-0 text-doux">
               {item.prix * item.quantite} €
             </span>
           </div>
         ))}
       </div>
 
-      <p className="text-2xl sm:text-3xl font-bold mb-5">
-        Total : {totalItems(commande.items)} €
-      </p>
+      <div className="h-px bg-ligne" />
 
-      <div className="grid grid-cols-1 gap-3 sm:flex sm:flex-wrap">
-        {commande.statut === "envoyée" ? (
-          <button
-            type="button"
-            onClick={onPrete}
-            className={`bg-blue-500 px-4 py-3 rounded-xl font-bold text-lg ${effetBouton}`}
-          >
-            Marquer prête
-          </button>
-        ) : (
-          <div className="bg-green-600 px-4 py-3 rounded-xl font-bold text-lg text-center">
-            Prête ✅
-          </div>
-        )}
+      <div className="flex items-baseline justify-between">
+        <span className="text-sm text-doux">Total</span>
+        <span className="text-lg font-semibold">
+          {totalItems(commande.items)} €
+        </span>
+      </div>
 
+      {prete ? (
         <button
           type="button"
           onClick={onRecuperee}
-          className={`bg-red-600 px-4 py-3 rounded-xl font-bold text-lg ${effetBouton}`}
+          className={`h-12 text-[15px] ${boutons.principal}`}
         >
           Commande récupérée
         </button>
-      </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={onPrete}
+            className={`h-12 text-[15px] ${boutons.principal}`}
+          >
+            Marquer prête
+          </button>
+
+          <button
+            type="button"
+            onClick={onRecuperee}
+            className={`h-12 text-[15px] ${boutons.secondaire}`}
+          >
+            Récupérée
+          </button>
+        </div>
+      )}
     </div>
   );
 }

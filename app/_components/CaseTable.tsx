@@ -1,14 +1,7 @@
 import Link from "next/link";
 import type { InfosTable } from "../_lib/store";
-import type { EtatTable } from "../_lib/tables";
-import { couleurs, effetBouton } from "../_lib/styles";
-
-const COULEUR_ETAT: Record<EtatTable, string> = {
-  libre: couleurs.gris,
-  occupee: couleurs.bleu,
-  commande: couleurs.orange,
-  prete: couleurs.vert,
-};
+import { STYLE_ETAT, type EtatTable } from "../_lib/tables";
+import { boutons } from "../_lib/styles";
 
 type Props = {
   numero: number;
@@ -25,36 +18,47 @@ export default function CaseTable({
   onClientArrive,
   onLiberer,
 }: Props) {
+  const style = STYLE_ETAT[etat];
+  const libre = etat === "libre";
+
   return (
-    <div className="space-y-2">
+    <div
+      className={`flex flex-col gap-3 rounded-[20px] p-3.5 transition-colors duration-300 ${style.fond}`}
+    >
       <Link
         href={`/table/${numero}`}
-        className={`w-full flex flex-col justify-center text-center ${COULEUR_ETAT[etat]} text-white rounded-2xl p-4 sm:p-6 min-h-[120px] sm:min-h-[130px] transition-all duration-300 hover:scale-[1.02] ${effetBouton}`}
+        className="flex min-h-16 flex-col gap-1 rounded-xl"
       >
-        <div className="text-2xl sm:text-2xl font-bold">Table {numero}</div>
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-2xl font-semibold tracking-[-0.02em]">
+            {numero}
+          </span>
+
+          <span
+            className={`rounded-full text-xs ${
+              libre ? "font-medium" : "px-2.5 py-1 font-semibold"
+            } ${style.pastille}`}
+          >
+            {style.label}
+          </span>
+        </div>
 
         {infos?.nom && (
-          <div className="mt-2 text-base sm:text-lg truncate">{infos.nom}</div>
-        )}
-
-        {infos?.telephone && (
-          <div className="text-xs sm:text-sm opacity-80 truncate">
-            {infos.telephone}
-          </div>
+          <div className="truncate text-[15px] font-medium">{infos.nom}</div>
         )}
 
         {infos && infos.personnes > 0 && (
-          <div className="text-xs sm:text-sm opacity-80">
+          <div className="text-[13px] text-texte/60">
             {infos.personnes} pers.
           </div>
         )}
       </Link>
 
-      {etat === "libre" ? (
+      {libre ? (
         <button
           type="button"
           onClick={onClientArrive}
-          className={`w-full ${couleurs.bleu} text-white rounded-xl py-3 text-base font-bold ${effetBouton}`}
+          className={`h-11 text-sm ${boutons.secondaire}`}
         >
           Client arrivé
         </button>
@@ -62,7 +66,7 @@ export default function CaseTable({
         <button
           type="button"
           onClick={onLiberer}
-          className={`w-full ${couleurs.rouge} text-white rounded-xl py-3 text-base font-bold ${effetBouton}`}
+          className={`h-11 rounded-2xl border text-sm font-semibold transition duration-150 active:scale-[0.97] active:opacity-80 ${style.bord}`}
         >
           Libérer
         </button>
