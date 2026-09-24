@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { MOT_DE_PASSE_APP } from "../_lib/config";
+import { connecterServeur } from "../_lib/session";
 
 export default function ServeurPage() {
   const [nom, setNom] = useState("");
   const [motDePasse, setMotDePasse] = useState("");
-
-  const MOT_DE_PASSE_APP = "13630";
 
   const enregistrerServeur = () => {
     if (!nom.trim()) {
@@ -20,8 +20,7 @@ export default function ServeurPage() {
       return;
     }
 
-    localStorage.setItem("serveur", nom.trim());
-    localStorage.setItem("connecte", "oui");
+    connecterServeur(nom.trim());
 
     window.location.href = "/";
   };
@@ -29,7 +28,6 @@ export default function ServeurPage() {
   return (
     <main className="min-h-screen bg-black text-white flex items-center justify-center p-6">
       <div className="bg-zinc-900 p-8 rounded-2xl w-full max-w-md">
-        
         <div className="flex justify-center mb-6">
           <Image
             src="/logo.png"
