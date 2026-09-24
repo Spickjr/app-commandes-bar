@@ -1,26 +1,43 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Palette "soft" : utilisable dans les classes Tailwind (bg-carte, text-doux, border-ligne…) */
+@theme {
+  --color-fond: #131316;
+  --color-carte: #1c1c20;
+  --color-carte-2: #26262b;
+  --color-bouton: #2a2a30;
+  --color-ligne: #2c2c32;
+  --color-texte: #ececef;
+  --color-doux: #9b9ba4;
+  --color-clair: #c9c9cf;
+
+  --color-bleu: #a3bde6;
+  --color-bleu-fond: #1d232e;
+  --color-bleu-bord: #3a4252;
+
+  --color-ambre: #e8c088;
+  --color-ambre-fond: #2a241b;
+  --color-ambre-bord: #4a4031;
+  --color-ambre-vif: #8a7348;
+
+  --color-sauge: #a5d4b5;
+  --color-sauge-fond: #1c2822;
+  --color-sauge-bord: #33483b;
+
+  --color-rouge: #e8a5a5;
+  --color-rouge-bord: #4a2f31;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-dm-sans);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  color-scheme: dark;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-fond);
+  color: var(--color-texte);
 }
