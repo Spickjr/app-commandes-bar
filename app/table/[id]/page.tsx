@@ -36,6 +36,7 @@ export default function TablePage() {
   const commandesBar = useCommandeStore((state) => state.commandesBar);
   const setInfosTable = useCommandeStore((state) => state.setInfosTable);
   const transfererTable = useCommandeStore((state) => state.transfererTable);
+  const ruptures = useCommandeStore((state) => state.ruptures);
 
   // Le message "Commande envoyée" disparaît tout seul.
   useEffect(() => {
@@ -150,12 +151,14 @@ export default function TablePage() {
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {CARTE[categorieActive].map((boisson) => {
             const quantite = quantites[boisson.nom];
+            const enRupture = ruptures.includes(boisson.nom);
 
             return (
               <button
                 type="button"
                 key={boisson.nom}
                 onClick={() => setPanier((p) => ajouterAuPanier(p, boisson))}
+                disabled={enRupture}
                 className={`relative flex min-h-28 flex-col justify-between gap-3 rounded-[20px] border bg-carte p-4 text-left ${effetBouton} ${
                   quantite ? "border-[#6b6b75]" : "border-transparent"
                 }`}
@@ -170,9 +173,15 @@ export default function TablePage() {
                   <NomBoisson nom={boisson.nom} />
                 </span>
 
-                <span className="text-[15px] font-medium text-clair">
-                  {boisson.prix} €
-                </span>
+                {enRupture ? (
+                  <span className="text-[13px] font-semibold text-rouge">
+                    Rupture
+                  </span>
+                ) : (
+                  <span className="text-[15px] font-medium text-clair">
+                    {boisson.prix} €
+                  </span>
+                )}
               </button>
             );
           })}
@@ -181,6 +190,7 @@ export default function TablePage() {
 
       <Panier
         items={panier}
+        ruptures={ruptures}
         envoiEnCours={envoiEnCours}
         onMoins={(nom) => setPanier((p) => enleverUnDuPanier(p, nom))}
         onPlus={(item) => setPanier((p) => ajouterAuPanier(p, item))}
