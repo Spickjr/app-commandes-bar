@@ -24,20 +24,13 @@ export default function TablePage() {
   const [categorieActive, setCategorieActive] = useState<Categorie>("Bières");
   const [envoiEnCours, setEnvoiEnCours] = useState(false);
   const [confirmation, setConfirmation] = useState(false);
+  const [erreurEnvoi, setErreurEnvoi] = useState(false);
 
   const ajouterCommande = useCommandeStore((state) => state.ajouterCommande);
-  const chargerCommandes = useCommandeStore((state) => state.chargerCommandes);
-  const chargerTables = useCommandeStore((state) => state.chargerTables);
   const infosTables = useCommandeStore((state) => state.infosTables);
   const statutsTables = useCommandeStore((state) => state.statutsTables);
   const commandesBar = useCommandeStore((state) => state.commandesBar);
   const setInfosTable = useCommandeStore((state) => state.setInfosTable);
-
-  // Données à jour même si on ouvre directement le lien d'une table.
-  useEffect(() => {
-    chargerCommandes();
-    chargerTables();
-  }, [chargerCommandes, chargerTables]);
 
   // Le message "Commande envoyée" disparaît tout seul.
   useEffect(() => {
@@ -61,11 +54,18 @@ export default function TablePage() {
     if (panier.length === 0 || envoiEnCours) return;
 
     setEnvoiEnCours(true);
-    await ajouterCommande(tableNom, serveur || "Non renseigné", panier);
-    setEnvoiEnCours(false);
+    setErreurEnvoi(false);
 
-    setPanier([]);
-    setConfirmation(true);
+    try {
+      await ajouterCommande(tableNom, serveur || "Non renseigné", panier);
+      setPanier([]);
+      setConfirmation(true);
+    } catch {
+      // Le panier est gardé : il suffit de réappuyer sur "Envoyer au bar".
+      setErreurEnvoi(true);
+    } finally {
+      setEnvoiEnCours(false);
+    }
   };
 
   return (
@@ -156,6 +156,15 @@ export default function TablePage() {
         onPlus={(item) => setPanier((p) => ajouterAuPanier(p, item))}
         onEnvoyer={envoyerAuBar}
       />
+
+      {erreurEnvoi && (
+        <div
+          role="alert"
+          className="fixed inset-x-5 top-5 z-30 mx-auto max-w-sm rounded-2xl border border-rouge-bord bg-carte px-5 py-3 text-center text-[15px] font-semibold text-rouge shadow-xl shadow-black/40"
+        >
+          Commande non envoyée : vérifie le réseau et réessaie.
+        </div>
+      )}
 
       {confirmation && (
         <div

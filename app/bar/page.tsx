@@ -13,15 +13,12 @@ const DUREE_NOUVELLE_MS = 5000;
 
 export default function BarPage() {
   const commandesBar = useCommandeStore((state) => state.commandesBar);
-  const chargerCommandes = useCommandeStore((state) => state.chargerCommandes);
   const marquerPrete = useCommandeStore((state) => state.marquerPrete);
   const terminerCommande = useCommandeStore((state) => state.terminerCommande);
 
   const [nouvellesCommandes, setNouvellesCommandes] = useState<number[]>([]);
 
   useEffect(() => {
-    chargerCommandes();
-
     // Signal visuel (et vibration) à l'arrivée d'une commande. Pas de son :
     // l'app est utilisée en soirée avec musique forte.
     const channel = supabase
@@ -57,7 +54,7 @@ export default function BarPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [chargerCommandes]);
+  }, []);
 
   return (
     <main className="mx-auto w-full max-w-6xl px-5 pb-28">
