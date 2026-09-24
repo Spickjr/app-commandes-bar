@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useCommandeStore } from "../_lib/store";
 import { supabase } from "../_lib/supabase";
 import { carte } from "../_lib/styles";
+import AlerteAttente from "../_components/AlerteAttente";
 import CommandeBar from "../_components/CommandeBar";
 import EnTete from "../_components/EnTete";
 import NavBas from "../_components/NavBas";
@@ -63,6 +64,8 @@ export default function BarPage() {
         titre="Commandes"
         info={`${commandesBar.length} en cours`}
       />
+
+      <AlerteAttente integree />
 
       <div className="mt-5 grid items-start gap-3 md:grid-cols-2 xl:grid-cols-3">
         {commandesBar.length === 0 ? (

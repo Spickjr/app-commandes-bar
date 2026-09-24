@@ -2,21 +2,24 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { ItemCommande, useCommandeStore } from "../../_lib/store";
 import { CARTE, CATEGORIES, Categorie } from "../../_lib/carte";
-import { nomTable } from "../../_lib/config";
+import { NUMEROS_TABLES, nomTable } from "../../_lib/config";
 import { useServeur } from "../../_lib/session";
 import { ajouterAuPanier, enleverUnDuPanier } from "../../_lib/panier";
 import { STYLE_ETAT, etatTable } from "../../_lib/tables";
-import { effetBouton } from "../../_lib/styles";
+import { boutons, effetBouton } from "../../_lib/styles";
 import { IconeRetour } from "../../_components/Icones";
 import InfosClient from "../../_components/InfosClient";
 import NomBoisson from "../../_components/NomBoisson";
 import Panier from "../../_components/Panier";
+import TransfertTable from "../../_components/TransfertTable";
 
 export default function TablePage() {
   const params = useParams();
+  const router = useRouter();
+  const numero = Number(params.id);
   const tableNom = nomTable(params.id as string);
 
   const serveur = useServeur();
@@ -25,12 +28,14 @@ export default function TablePage() {
   const [envoiEnCours, setEnvoiEnCours] = useState(false);
   const [confirmation, setConfirmation] = useState(false);
   const [erreurEnvoi, setErreurEnvoi] = useState(false);
+  const [transfertOuvert, setTransfertOuvert] = useState(false);
 
   const ajouterCommande = useCommandeStore((state) => state.ajouterCommande);
   const infosTables = useCommandeStore((state) => state.infosTables);
   const statutsTables = useCommandeStore((state) => state.statutsTables);
   const commandesBar = useCommandeStore((state) => state.commandesBar);
   const setInfosTable = useCommandeStore((state) => state.setInfosTable);
+  const transfererTable = useCommandeStore((state) => state.transfererTable);
 
   // Le message "Commande envoyée" disparaît tout seul.
   useEffect(() => {
@@ -45,6 +50,21 @@ export default function TablePage() {
     statutsTables[tableNom],
     commandesBar.find((commande) => commande.table === tableNom)
   );
+
+  const tablesLibres = NUMEROS_TABLES.filter(
+    (n) =>
+      n !== numero &&
+      etatTable(
+        statutsTables[nomTable(n)],
+        commandesBar.find((commande) => commande.table === nomTable(n))
+      ) === "libre"
+  );
+
+  const transferer = async (destination: number) => {
+    await transfererTable(tableNom, nomTable(destination));
+    setTransfertOuvert(false);
+    router.replace(`/table/${destination}`);
+  };
 
   const quantites = Object.fromEntries(
     panier.map((item) => [item.nom, item.quantite])
@@ -98,6 +118,16 @@ export default function TablePage() {
           infos={infosExistantes}
           onEnregistrer={(infos) => setInfosTable(tableNom, infos)}
         />
+
+        {etat !== "libre" && (
+          <button
+            type="button"
+            onClick={() => setTransfertOuvert(true)}
+            className={`h-11 self-start px-4 text-sm ${boutons.secondaire}`}
+          >
+            Transférer vers une autre table
+          </button>
+        )}
 
         <div className="-mx-5 mt-1 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none]">
           {CATEGORIES.map((categorie) => (
@@ -164,6 +194,15 @@ export default function TablePage() {
         >
           Commande non envoyée : vérifie le réseau et réessaie.
         </div>
+      )}
+
+      {transfertOuvert && (
+        <TransfertTable
+          source={numero}
+          tablesLibres={tablesLibres}
+          onTransferer={transferer}
+          onFermer={() => setTransfertOuvert(false)}
+        />
       )}
 
       {confirmation && (
