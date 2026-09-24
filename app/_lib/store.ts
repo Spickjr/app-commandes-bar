@@ -56,7 +56,8 @@ type Store = {
   ruptures: string[];
   // false tant que la table "ruptures" n'existe pas dans Supabase.
   rupturesDisponibles: boolean;
-  basculerRupture: (nom: string) => Promise<void>;
+  // Renvoie false si Supabase a refusé l'enregistrement.
+  basculerRupture: (nom: string) => Promise<boolean>;
 
   commandesBar: Commande[];
   historique: Commande[];
@@ -334,7 +335,12 @@ export const useCommandeStore = create<Store>()((set, get) => {
         ? await supabase.from("ruptures").delete().eq("nom", nom)
         : await supabase.from("ruptures").insert({ nom });
 
-      if (error) await rechargerRuptures();
+      if (error) {
+        await rechargerRuptures();
+        return false;
+      }
+
+      return true;
     },
 
     commandesBar: [],
