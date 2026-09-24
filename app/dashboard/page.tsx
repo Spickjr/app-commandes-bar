@@ -16,6 +16,7 @@ import { deconnecterServeur, useAcces, useServeur } from "../_lib/session";
 import EnTete from "../_components/EnTete";
 import HistoriqueTable from "../_components/HistoriqueTable";
 import { IconeTelecharger } from "../_components/Icones";
+import ListePaiements from "../_components/ListePaiements";
 import MenuServeur from "../_components/MenuServeur";
 import NavBas from "../_components/NavBas";
 
@@ -30,6 +31,7 @@ export default function DashboardPage() {
   const commandesBar = useCommandeStore((state) => state.commandesBar);
   const paiements = useCommandeStore((state) => state.paiements);
   const paiementsDisponibles = useCommandeStore((state) => state.paiementsDisponibles);
+  const annulerPaiement = useCommandeStore((state) => state.annulerPaiement);
 
   // Charge l'historique depuis Supabase, même si on arrive directement ici.
   useEffect(() => {
@@ -158,6 +160,10 @@ export default function DashboardPage() {
             ))
           )}
         </div>
+
+        {paiementsDisponibles && (
+          <ListePaiements paiements={paiements} onAnnuler={annulerPaiement} />
+        )}
 
         <div className={`flex flex-col ${carte}`}>
           <span className="px-[18px] pt-[18px] pb-1.5 text-base font-semibold">
