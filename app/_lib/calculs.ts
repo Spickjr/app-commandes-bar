@@ -57,25 +57,48 @@ export const grouperParTable = (commandes: Commande[]) =>
     return groupes;
   }, {} as Record<string, Commande[]>);
 
-// Addition d'une table : tout ce qui a été commandé (en cours et servi)
-// moins ce qui a déjà été encaissé.
+// Addition en cours d'une table. Elle repart de zéro à chaque fois que
+// l'addition précédente a été entièrement payée : seules les commandes
+// pas encore réglées (et les paiements qui s'y rapportent) sont comptées.
 export const additionTable = (
   table: string,
   commandes: Commande[],
   paiements: Paiement[]
 ) => {
-  const total = commandes
-    .filter((c) => c.table === table)
-    .reduce((somme, c) => somme + totalItems(c.items), 0);
+  const evenements = [
+    ...commandes
+      .filter((c) => c.table === table)
+      .map((c) => ({ date: c.creeLe, montant: totalItems(c.items), paiement: null })),
+    ...paiements
+      .filter((p) => p.table === table)
+      .map((p) => ({ date: p.creeLe, montant: p.montant, paiement: p })),
+  ].sort((a, b) => a.date.localeCompare(b.date));
 
-  const paye = paiements
-    .filter((p) => p.table === table)
-    .reduce((somme, p) => somme + p.montant, 0);
+  let total = 0;
+  let paye = 0;
+  let paiementsEnCours: Paiement[] = [];
+
+  evenements.forEach((e) => {
+    if (e.paiement) {
+      paye = arrondir(paye + e.montant);
+      paiementsEnCours.push(e.paiement);
+    } else {
+      total = arrondir(total + e.montant);
+    }
+
+    // Addition soldée : on repart de zéro pour les prochaines commandes.
+    if (total > 0 && paye >= total) {
+      total = 0;
+      paye = 0;
+      paiementsEnCours = [];
+    }
+  });
 
   return {
-    total: arrondir(total),
-    paye: arrondir(paye),
+    total,
+    paye,
     reste: Math.max(0, arrondir(total - paye)),
+    paiementsEnCours,
   };
 };
 

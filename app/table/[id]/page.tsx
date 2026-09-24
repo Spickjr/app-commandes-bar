@@ -46,7 +46,6 @@ export default function TablePage() {
   const chargerCommandes = useCommandeStore((state) => state.chargerCommandes);
   const encaisser = useCommandeStore((state) => state.encaisser);
   const annulerPaiement = useCommandeStore((state) => state.annulerPaiement);
-  const setStatutTable = useCommandeStore((state) => state.setStatutTable);
 
   // L'addition a besoin aussi des commandes déjà servies de la table.
   useEffect(() => {
@@ -155,16 +154,17 @@ export default function TablePage() {
 
         <Addition
           table={tableNom}
-          {...addition}
+          total={addition.total}
+          paye={addition.paye}
+          reste={addition.reste}
           personnes={infosExistantes?.personnes || 0}
           serveur={serveur || "Non renseigné"}
-          paiements={paiements.filter((p) => p.table === tableNom)}
+          paiements={addition.paiementsEnCours}
           disponible={paiementsDisponibles}
           onEncaisser={(montant, mode) =>
             encaisser(tableNom, montant, mode, serveur || "Non renseigné")
           }
           onAnnulerPaiement={annulerPaiement}
-          onLiberer={() => setStatutTable(tableNom, "libre")}
         />
 
         <div className="-mx-5 mt-1 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none]">
