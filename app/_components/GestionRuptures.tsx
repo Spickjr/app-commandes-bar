@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { CARTE, CATEGORIES, nomSurUneLigne } from "../_lib/carte";
 import { useCommandeStore } from "../_lib/store";
 import { boutons } from "../_lib/styles";
@@ -10,6 +11,13 @@ export default function GestionRuptures({ onFermer }: { onFermer: () => void }) 
   const ruptures = useCommandeStore((state) => state.ruptures);
   const disponibles = useCommandeStore((state) => state.rupturesDisponibles);
   const basculerRupture = useCommandeStore((state) => state.basculerRupture);
+  const [erreur, setErreur] = useState(false);
+
+  const basculer = async (nom: string) => {
+    setErreur(false);
+    const ok = await basculerRupture(nom);
+    if (!ok) setErreur(true);
+  };
 
   return (
     <div
@@ -72,7 +80,7 @@ export default function GestionRuptures({ onFermer }: { onFermer: () => void }) 
                         type="checkbox"
                         role="switch"
                         checked={enRupture}
-                        onChange={() => basculerRupture(nom)}
+                        onChange={() => basculer(nom)}
                         aria-label={`${nomSurUneLigne(nom)} en rupture`}
                         className="peer sr-only"
                       />
@@ -94,6 +102,13 @@ export default function GestionRuptures({ onFermer }: { onFermer: () => void }) 
               </div>
             ))}
           </div>
+        )}
+
+        {erreur && (
+          <p role="alert" className="text-sm font-semibold text-rouge">
+            Supabase a refusé l’enregistrement : la table « ruptures » est
+            protégée (RLS). Voir la correction à faire dans Supabase.
+          </p>
         )}
 
         <button
