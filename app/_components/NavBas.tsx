@@ -15,7 +15,7 @@ export default function NavBas() {
   const chemin = usePathname();
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-carte-2 bg-fond/95 backdrop-blur pb-[env(safe-area-inset-bottom)]">
+    <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-carte-2 bg-fond pb-[env(safe-area-inset-bottom)]">
       <div className="mx-auto flex h-20 max-w-md items-center justify-around px-5 pb-2">
         {LIENS.map(({ href, label, Icone }) => {
           const actif = chemin === href;

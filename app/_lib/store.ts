@@ -128,34 +128,30 @@ const lireTables = async () => {
 // ---------- Écriture Supabase ----------
 
 // Met à jour la ligne de la table si elle existe, sinon la crée.
+// Un seul aller-retour Supabase dans le cas courant (la table existe déjà).
 const enregistrerTable = async (
   table: string,
   modifications: Partial<LigneTable>,
   statut: string,
   infos: InfosTable
 ) => {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("tables")
-    .select("table_name")
+    .update(modifications)
     .eq("table_name", table)
-    .limit(1);
+    .select("table_name");
 
-  if (data && data.length > 0) {
-    await supabase
-      .from("tables")
-      .update(modifications)
-      .eq("table_name", table);
-  } else {
-    await supabase.from("tables").insert({
-      table_name: table,
-      statut,
-      nom_client: infos.nom,
-      telephone: infos.telephone,
-      personnes: infos.personnes,
-      note: infos.note,
-      ...modifications,
-    });
-  }
+  if (error || (data && data.length > 0)) return;
+
+  await supabase.from("tables").insert({
+    table_name: table,
+    statut,
+    nom_client: infos.nom,
+    telephone: infos.telephone,
+    personnes: infos.personnes,
+    note: infos.note,
+    ...modifications,
+  });
 };
 
 // ---------- Temps réel ----------
@@ -164,15 +160,25 @@ const enregistrerTable = async (
 let canalCommandes: RealtimeChannel | null = null;
 let canalTables: RealtimeChannel | null = null;
 
-const ecouter = (nomCanal: string, tableSupabase: string, recharger: () => void) =>
-  supabase
+// Plusieurs changements rapprochés (ex : commande + statut de table)
+// ne déclenchent qu'un seul rechargement.
+const DELAI_RECHARGEMENT_MS = 150;
+
+const ecouter = (nomCanal: string, tableSupabase: string, recharger: () => void) => {
+  let minuteur: ReturnType<typeof setTimeout> | undefined;
+
+  return supabase
     .channel(nomCanal)
     .on(
       "postgres_changes",
       { event: "*", schema: "public", table: tableSupabase },
-      recharger
+      () => {
+        clearTimeout(minuteur);
+        minuteur = setTimeout(recharger, DELAI_RECHARGEMENT_MS);
+      }
     )
     .subscribe();
+};
 
 // ---------- Store ----------
 
@@ -187,15 +193,19 @@ export const useCommandeStore = create<Store>()(
       setStatutTable: async (table, statut) => {
         const infos = get().infosTables[table] || INFOS_VIDES;
 
-        await enregistrerTable(table, { statut }, statut, infos);
-
         set((state) => ({
           statutsTables: { ...state.statutsTables, [table]: statut },
         }));
+
+        await enregistrerTable(table, { statut }, statut, infos);
       },
 
       setInfosTable: async (table, infos) => {
         const statut = get().statutsTables[table] || "occupée";
+
+        set((state) => ({
+          infosTables: { ...state.infosTables, [table]: infos },
+        }));
 
         await enregistrerTable(
           table,
@@ -208,10 +218,6 @@ export const useCommandeStore = create<Store>()(
           statut,
           infos
         );
-
-        set((state) => ({
-          infosTables: { ...state.infosTables, [table]: infos },
-        }));
       },
 
       chargerTables: async () => {
@@ -241,52 +247,60 @@ export const useCommandeStore = create<Store>()(
       },
 
       ajouterCommande: async (table, serveur, items) => {
-        await supabase.from("commandes").insert({
-          table_name: table,
-          serveur,
-          statut: "envoyée",
-          items,
-        });
-
-        await get().setStatutTable(table, "commande");
+        await Promise.all([
+          supabase.from("commandes").insert({
+            table_name: table,
+            serveur,
+            statut: "envoyée",
+            items,
+          }),
+          get().setStatutTable(table, "commande"),
+        ]);
       },
 
       marquerPrete: async (id) => {
         const commande = get().commandesBar.find((c) => c.id === id);
         if (!commande) return;
 
-        await supabase
-          .from("commandes")
-          .update({ statut: "prête" })
-          .eq("id", id);
+        set((state) => ({
+          commandesBar: state.commandesBar.map((c) =>
+            c.id === id ? { ...c, statut: "prête" } : c
+          ),
+        }));
 
-        await get().setStatutTable(commande.table, "prete");
+        await Promise.all([
+          supabase.from("commandes").update({ statut: "prête" }).eq("id", id),
+          get().setStatutTable(commande.table, "prete"),
+        ]);
       },
 
       terminerCommande: async (id) => {
         const commande = get().commandesBar.find((c) => c.id === id);
         if (!commande) return;
 
-        await supabase
-          .from("commandes")
-          .update({ statut: "terminée" })
-          .eq("id", id);
+        set((state) => ({
+          commandesBar: state.commandesBar.filter((c) => c.id !== id),
+          historique: [...state.historique, { ...commande, statut: "terminée" }],
+        }));
 
-        await get().setStatutTable(commande.table, "occupée");
+        await Promise.all([
+          supabase.from("commandes").update({ statut: "terminée" }).eq("id", id),
+          get().setStatutTable(commande.table, "occupée"),
+        ]);
       },
 
       supprimerHistorique: async (id) => {
-        await supabase.from("commandes").delete().eq("id", id);
-
         set((state) => ({
           historique: state.historique.filter((c) => c.id !== id),
         }));
+
+        await supabase.from("commandes").delete().eq("id", id);
       },
 
       viderHistorique: async () => {
-        await supabase.from("commandes").delete().eq("statut", "terminée");
-
         set({ historique: [] });
+
+        await supabase.from("commandes").delete().eq("statut", "terminée");
       },
     }),
     {
