@@ -2,11 +2,14 @@ import Link from "next/link";
 import type { InfosTable } from "../_lib/store";
 import { STYLE_ETAT, type EtatTable } from "../_lib/tables";
 import { boutons } from "../_lib/styles";
+import { formatEuros } from "../_lib/argent";
 
 type Props = {
   numero: number;
   etat: EtatTable;
   infos?: InfosTable;
+  // Reste à payer (null si la table n'a rien commandé).
+  reste?: number | null;
   onClientArrive: () => void;
   onLiberer: () => void;
 };
@@ -15,6 +18,7 @@ export default function CaseTable({
   numero,
   etat,
   infos,
+  reste = null,
   onClientArrive,
   onLiberer,
 }: Props) {
@@ -50,6 +54,16 @@ export default function CaseTable({
         {infos && infos.personnes > 0 && (
           <div className="text-[13px] text-texte/60">
             {infos.personnes} pers.
+          </div>
+        )}
+
+        {!libre && reste !== null && (
+          <div
+            className={`text-[13px] font-semibold ${
+              reste > 0 ? "text-ambre" : "text-sauge"
+            }`}
+          >
+            {reste > 0 ? `À régler ${formatEuros(reste)}` : "Réglée"}
           </div>
         )}
       </Link>

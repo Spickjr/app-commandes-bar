@@ -15,6 +15,8 @@ import InfosClient from "../../_components/InfosClient";
 import NomBoisson from "../../_components/NomBoisson";
 import Panier from "../../_components/Panier";
 import TransfertTable from "../../_components/TransfertTable";
+import Addition from "../../_components/Addition";
+import { additionTable } from "../../_lib/calculs";
 
 export default function TablePage() {
   const params = useParams();
@@ -38,6 +40,18 @@ export default function TablePage() {
   const setInfosTable = useCommandeStore((state) => state.setInfosTable);
   const transfererTable = useCommandeStore((state) => state.transfererTable);
   const ruptures = useCommandeStore((state) => state.ruptures);
+  const historique = useCommandeStore((state) => state.historique);
+  const paiements = useCommandeStore((state) => state.paiements);
+  const paiementsDisponibles = useCommandeStore((state) => state.paiementsDisponibles);
+  const chargerCommandes = useCommandeStore((state) => state.chargerCommandes);
+  const encaisser = useCommandeStore((state) => state.encaisser);
+  const annulerPaiement = useCommandeStore((state) => state.annulerPaiement);
+  const setStatutTable = useCommandeStore((state) => state.setStatutTable);
+
+  // L'addition a besoin aussi des commandes déjà servies de la table.
+  useEffect(() => {
+    chargerCommandes();
+  }, [chargerCommandes]);
 
   // Le message "Commande envoyée" disparaît tout seul.
   useEffect(() => {
@@ -67,6 +81,12 @@ export default function TablePage() {
     setTransfertOuvert(false);
     router.replace(`/table/${destination}`);
   };
+
+  const addition = additionTable(
+    tableNom,
+    [...historique, ...commandesBar],
+    paiements
+  );
 
   const quantites = Object.fromEntries(
     panier.map((item) => [item.nom, item.quantite])
@@ -132,6 +152,19 @@ export default function TablePage() {
             Transférer vers une autre table
           </button>
         )}
+
+        <Addition
+          table={tableNom}
+          {...addition}
+          personnes={infosExistantes?.personnes || 0}
+          paiements={paiements.filter((p) => p.table === tableNom)}
+          disponible={paiementsDisponibles}
+          onEncaisser={(montant, mode) =>
+            encaisser(tableNom, montant, mode, serveur || "Non renseigné")
+          }
+          onAnnulerPaiement={annulerPaiement}
+          onLiberer={() => setStatutTable(tableNom, "libre")}
+        />
 
         <div className="-mx-5 mt-1 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none]">
           {CATEGORIES.map((categorie) => (

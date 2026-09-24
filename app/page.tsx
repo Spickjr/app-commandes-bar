@@ -1,10 +1,12 @@
 "use client";
 
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useCommandeStore } from "./_lib/store";
 import { NUMEROS_TABLES, nomTable } from "./_lib/config";
 import { deconnecterServeur, useAcces, useServeur } from "./_lib/session";
 import { STYLE_ETAT, etatTable } from "./_lib/tables";
+import { additionTable } from "./_lib/calculs";
 import CaseTable from "./_components/CaseTable";
 import EnTete from "./_components/EnTete";
 import MenuServeur from "./_components/MenuServeur";
@@ -18,6 +20,17 @@ export default function Home() {
   const statutsTables = useCommandeStore((state) => state.statutsTables);
   const infosTables = useCommandeStore((state) => state.infosTables);
   const setStatutTable = useCommandeStore((state) => state.setStatutTable);
+  const historique = useCommandeStore((state) => state.historique);
+  const paiements = useCommandeStore((state) => state.paiements);
+  const paiementsDisponibles = useCommandeStore((state) => state.paiementsDisponibles);
+  const chargerCommandes = useCommandeStore((state) => state.chargerCommandes);
+
+  // Commandes déjà servies incluses, pour afficher le reste à régler.
+  useEffect(() => {
+    chargerCommandes();
+  }, [chargerCommandes]);
+
+  const toutesCommandes = [...historique, ...commandesBar];
 
   const autorise = useAcces("serveur");
 
@@ -59,6 +72,12 @@ export default function Home() {
               numero={numero}
               etat={etatTable(statutsTables[table], commandeEnCours)}
               infos={infosTables[table]}
+              reste={
+                paiementsDisponibles &&
+                toutesCommandes.some((c) => c.table === table)
+                  ? additionTable(table, toutesCommandes, paiements).reste
+                  : null
+              }
               onClientArrive={() => setStatutTable(table, "occupée")}
               onLiberer={() => setStatutTable(table, "libre")}
             />
