@@ -7,10 +7,11 @@ import { IconeChevron } from "./Icones";
 type Props = {
   table: string;
   commandes: Commande[];
-  onEffacer: (id: number) => void;
+  // Absent = lecture seule (profil serveur).
+  onEffacer?: (id: number) => void;
 };
 
-// Historique des commandes terminées d'une table (Dashboard), repliable.
+// Historique des commandes d'une table, repliable (Dashboard et Historique).
 export default function HistoriqueTable({ table, commandes, onEffacer }: Props) {
   const totalTable = commandes.reduce(
     (total, commande) => total + totalItems(commande.items),
@@ -40,6 +41,11 @@ export default function HistoriqueTable({ table, commandes, onEffacer }: Props) 
                   {" "}
                   · {commande.serveur || "Serveur non renseigné"}
                 </span>
+                {commande.statut !== "terminée" && (
+                  <span className="ml-2 rounded-full bg-ambre/15 px-2 py-0.5 text-xs font-semibold text-ambre">
+                    En cours
+                  </span>
+                )}
               </span>
               <span className="text-sm font-semibold">
                 {totalItems(commande.items)} €
@@ -59,13 +65,15 @@ export default function HistoriqueTable({ table, commandes, onEffacer }: Props) 
               ))}
             </div>
 
-            <button
-              type="button"
-              onClick={() => onEffacer(commande.id)}
-              className={`mt-2 -mb-1 min-h-11 text-sm font-semibold text-rouge ${effetBouton}`}
-            >
-              Effacer
-            </button>
+            {onEffacer && (
+              <button
+                type="button"
+                onClick={() => onEffacer(commande.id)}
+                className={`mt-2 -mb-1 min-h-11 text-sm font-semibold text-rouge ${effetBouton}`}
+              >
+                Effacer
+              </button>
+            )}
           </div>
         ))}
       </div>

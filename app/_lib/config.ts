@@ -8,6 +8,9 @@ export const ALERTE_ATTENTE_MINUTES = 2;
 // Mot de passe commun demandé à la connexion serveur.
 export const MOT_DE_PASSE_APP = "13630";
 
+// Mot de passe du profil Bar (commandes + dashboard complet).
+export const MOT_DE_PASSE_BAR = "13630";
+
 export const NUMEROS_TABLES = Array.from(
   { length: NOMBRE_TABLES },
   (_, i) => i + 1

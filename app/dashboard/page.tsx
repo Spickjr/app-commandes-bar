@@ -1,17 +1,23 @@
 "use client";
 
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useCommandeStore } from "../_lib/store";
 import { nomSurUneLigne } from "../_lib/carte";
 import { grouperParTable, statistiquesSoiree } from "../_lib/calculs";
 import { genererRapportPDF } from "../_lib/rapport";
 import { boutons, carte } from "../_lib/styles";
+import { deconnecterServeur, useAcces, useServeur } from "../_lib/session";
 import EnTete from "../_components/EnTete";
 import HistoriqueTable from "../_components/HistoriqueTable";
 import { IconeTelecharger } from "../_components/Icones";
+import MenuServeur from "../_components/MenuServeur";
 import NavBas from "../_components/NavBas";
 
 export default function DashboardPage() {
+  const router = useRouter();
+  const autorise = useAcces("bar");
+  const nom = useServeur();
   const historique = useCommandeStore((state) => state.historique);
   const chargerCommandes = useCommandeStore((state) => state.chargerCommandes);
   const supprimerHistorique = useCommandeStore((state) => state.supprimerHistorique);
@@ -26,9 +32,23 @@ export default function DashboardPage() {
   const historiqueParTable = grouperParTable(historique);
   const quantiteMax = stats.ventesParBoisson[0]?.quantite || 1;
 
+  if (!autorise) return null;
+
   return (
     <main className="mx-auto w-full max-w-3xl px-5 pb-28">
-      <EnTete surtitre="Soirée en cours" titre="Dashboard" />
+      <EnTete
+        surtitre="Soirée en cours"
+        titre="Dashboard"
+        aDroite={
+          <MenuServeur
+            serveur={nom}
+            onDeconnexion={() => {
+              deconnecterServeur();
+              router.push("/serveur");
+            }}
+          />
+        }
+      />
 
       <div className="mt-5 flex flex-col gap-3">
         <div className={`flex flex-col gap-1 p-[18px] ${carte}`}>
