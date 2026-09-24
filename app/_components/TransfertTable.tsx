@@ -52,8 +52,9 @@ export default function TransfertTable({
             Transférer la table {source}
           </h2>
           <p className="text-sm text-doux">
-            Le client, ses infos et ses commandes en cours passent sur la
-            nouvelle table. La table {source} redevient libre.
+            Le client, ses infos et toutes ses commandes (en cours et
+            historique) passent sur la nouvelle table. La table {source}
+            redevient libre.
           </p>
         </div>
 
