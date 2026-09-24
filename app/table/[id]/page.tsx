@@ -157,6 +157,7 @@ export default function TablePage() {
           table={tableNom}
           {...addition}
           personnes={infosExistantes?.personnes || 0}
+          serveur={serveur || "Non renseigné"}
           paiements={paiements.filter((p) => p.table === tableNom)}
           disponible={paiementsDisponibles}
           onEncaisser={(montant, mode) =>

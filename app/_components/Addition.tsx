@@ -12,6 +12,7 @@ type Props = {
   paye: number;
   reste: number;
   personnes: number;
+  serveur: string;
   paiements: Paiement[];
   disponible: boolean;
   onEncaisser: (montant: number, mode: ModePaiement) => Promise<boolean>;
@@ -29,6 +30,7 @@ export default function Addition({
   paye,
   reste,
   personnes,
+  serveur,
   paiements,
   disponible,
   onEncaisser,
@@ -36,18 +38,43 @@ export default function Addition({
   onLiberer,
 }: Props) {
   const [ouvert, setOuvert] = useState(false);
+  const [details, setDetails] = useState(false);
   const reglee = total > 0 && reste === 0;
 
   if (total === 0 && paiements.length === 0) return null;
+
+  // Table réglée : une simple ligne pour ne pas prendre de place.
+  // L'encadré complet revient si la table recommande (reste > 0).
+  if (reglee && !details) {
+    return (
+      <div className="flex min-h-11 items-center gap-3 px-1 text-sm">
+        <span className="rounded-full bg-sauge/15 px-2.5 py-1 text-xs font-semibold text-sauge">
+          Réglée
+        </span>
+        <span className="grow text-doux">{formatEuros(total)} encaissés</span>
+        <button
+          type="button"
+          onClick={() => setDetails(true)}
+          className={`min-h-11 px-1 text-[13px] font-semibold text-doux hover:text-texte ${effetBouton}`}
+        >
+          Détails
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className={`flex flex-col gap-3 p-4 ${carte}`}>
       <div className="flex items-center justify-between gap-3">
         <span className="text-[17px] font-semibold">Addition</span>
         {reglee && (
-          <span className="rounded-full bg-sauge/15 px-2.5 py-1 text-xs font-semibold text-sauge">
-            Réglée
-          </span>
+          <button
+            type="button"
+            onClick={() => setDetails(false)}
+            className={`min-h-9 text-[13px] font-semibold text-doux hover:text-texte ${effetBouton}`}
+          >
+            Réduire
+          </button>
         )}
       </div>
 
@@ -126,6 +153,7 @@ export default function Addition({
           table={table}
           reste={reste}
           personnes={personnes}
+          serveur={serveur}
           onEncaisser={onEncaisser}
           onFermer={() => setOuvert(false)}
         />

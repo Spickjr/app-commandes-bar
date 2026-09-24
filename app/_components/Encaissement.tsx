@@ -4,11 +4,13 @@ import { useState } from "react";
 import type { ModePaiement } from "../_lib/store";
 import { arrondir, formatEuros, lireMontant } from "../_lib/argent";
 import { boutons, effetBouton } from "../_lib/styles";
+import { lienPaiementSumUp, sumupActif } from "../_lib/sumup";
 
 type Props = {
   table: string;
   reste: number;
   personnes: number;
+  serveur: string;
   onEncaisser: (montant: number, mode: ModePaiement) => Promise<boolean>;
   onFermer: () => void;
 };
@@ -22,6 +24,7 @@ export default function Encaissement({
   table,
   reste,
   personnes,
+  serveur,
   onEncaisser,
   onFermer,
 }: Props) {
@@ -68,6 +71,14 @@ export default function Encaissement({
       setEnCours(false);
     }
   };
+
+  // Ouvre l'app SumUp avec le montant ; le paiement est enregistré au retour.
+  const payerAvecSumUp = () => {
+    if (!montantValide) return;
+    window.location.assign(lienPaiementSumUp({ table, montant, serveur }));
+  };
+
+  const avecSumUp = sumupActif && mode === "cb";
 
   return (
     <div
@@ -178,6 +189,19 @@ export default function Encaissement({
           </p>
         )}
 
+        {avecSumUp && (
+          <button
+            type="button"
+            onClick={payerAvecSumUp}
+            disabled={!montantValide}
+            className={`h-[54px] text-[15px] ${boutons.principal}`}
+          >
+            {montantValide
+              ? `Payer avec SumUp · ${formatEuros(montant)}`
+              : "Payer avec SumUp"}
+          </button>
+        )}
+
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
@@ -191,13 +215,17 @@ export default function Encaissement({
             type="button"
             onClick={valider}
             disabled={enCours || !montantValide}
-            className={`h-[54px] text-[15px] ${boutons.principal}`}
+            className={`h-[54px] text-[15px] ${
+              avecSumUp ? boutons.secondaire : boutons.principal
+            }`}
           >
             {enCours
               ? "Enregistrement…"
-              : montantValide
-                ? `Encaisser ${formatEuros(montant)}`
-                : "Encaisser"}
+              : avecSumUp
+                ? "Déjà payé : noter"
+                : montantValide
+                  ? `Encaisser ${formatEuros(montant)}`
+                  : "Encaisser"}
           </button>
         </div>
       </div>
