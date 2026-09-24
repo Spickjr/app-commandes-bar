@@ -1,7 +1,6 @@
 "use client";
 
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
 
@@ -47,6 +46,9 @@ type LigneTable = {
 };
 
 type Store = {
+  // false quand la dernière lecture Supabase a échoué (bandeau d'alerte).
+  connexionOk: boolean;
+
   commandesBar: Commande[];
   historique: Commande[];
 
@@ -232,177 +234,173 @@ const ecouter = (
 
 // ---------- Store ----------
 
-export const useCommandeStore = create<Store>()(
-  persist(
-    (set, get) => {
-      const rechargerTables = async () => {
-        const tables = await lireTables();
-        if (tables) set(tables);
-      };
+// Pas de sauvegarde locale des données : chaque appareil affiche toujours
+// ce qui est dans Supabase (une copie locale pouvait devenir périmée).
+export const useCommandeStore = create<Store>()((set, get) => {
+  const rechargerTables = async () => {
+    const tables = await lireTables();
+    set(tables ? { ...tables, connexionOk: true } : { connexionOk: false });
+  };
 
-      const rechargerToutesCommandes = async () => {
-        const commandes = await lireToutesCommandes();
-        if (commandes) set(commandes);
-      };
+  const rechargerToutesCommandes = async () => {
+    const commandes = await lireToutesCommandes();
+    set(commandes ? { ...commandes, connexionOk: true } : { connexionOk: false });
+  };
 
-      const rechargerCommandesEnCours = async () => {
-        const commandes = await lireCommandesEnCours();
-        if (commandes) set(commandes);
-      };
+  const rechargerCommandesEnCours = async () => {
+    const commandes = await lireCommandesEnCours();
+    set(commandes ? { ...commandes, connexionOk: true } : { connexionOk: false });
+  };
 
-      // (Re)crée les abonnements temps réel s'ils n'existent pas ou ont été perdus.
-      const assurerTempsReel = () => {
-        if (!canalTables) {
-          canalTables = ecouter("tables-live", "tables", rechargerTables, () => {
-            canalTables = null;
-          });
-        }
-
-        if (!canalCommandes) {
-          canalCommandes = ecouter(
-            "commandes-live",
-            "commandes",
-            rechargerToutesCommandes,
-            () => {
-              canalCommandes = null;
-            }
-          );
-        }
-      };
-
-      return {
-        commandesBar: [],
-        historique: [],
-        statutsTables: {},
-        infosTables: {},
-
-        setStatutTable: async (table, statut) => {
-          const infos = get().infosTables[table] || INFOS_VIDES;
-
-          // Affichage immédiat, puis Supabase. En cas d'échec, on revient
-          // à l'état réel pour ne pas afficher quelque chose de faux.
-          set((state) => ({
-            statutsTables: { ...state.statutsTables, [table]: statut },
-          }));
-
-          const ok = await enregistrerTable(table, { statut }, statut, infos);
-          if (!ok) await rechargerTables();
-        },
-
-        setInfosTable: async (table, infos) => {
-          const statut = get().statutsTables[table] || "occupée";
-
-          set((state) => ({
-            infosTables: { ...state.infosTables, [table]: infos },
-          }));
-
-          const ok = await enregistrerTable(
-            table,
-            {
-              nom_client: infos.nom,
-              telephone: infos.telephone,
-              personnes: infos.personnes,
-              note: infos.note,
-            },
-            statut,
-            infos
-          );
-
-          if (!ok) await rechargerTables();
-        },
-
-        chargerTables: async () => {
-          assurerTempsReel();
-          await rechargerTables();
-        },
-
-        chargerCommandes: async () => {
-          assurerTempsReel();
-          await rechargerToutesCommandes();
-        },
-
-        synchroniser: async () => {
-          assurerTempsReel();
-          await Promise.all([rechargerTables(), rechargerCommandesEnCours()]);
-        },
-
-        ajouterCommande: async (table, serveur, items) => {
-          const [{ error }] = await Promise.all([
-            supabase.from("commandes").insert({
-              table_name: table,
-              serveur,
-              statut: "envoyée",
-              items,
-            }),
-            get().setStatutTable(table, "commande"),
-          ]);
-
-          if (error) {
-            await rechargerTables();
-            throw new Error(error.message);
-          }
-
-          await rechargerCommandesEnCours();
-        },
-
-        marquerPrete: async (id) => {
-          const commande = get().commandesBar.find((c) => c.id === id);
-          if (!commande) return;
-
-          set((state) => ({
-            commandesBar: state.commandesBar.map((c) =>
-              c.id === id ? { ...c, statut: "prête" } : c
-            ),
-          }));
-
-          const [{ error }] = await Promise.all([
-            supabase.from("commandes").update({ statut: "prête" }).eq("id", id),
-            get().setStatutTable(commande.table, "prete"),
-          ]);
-
-          if (error) await rechargerToutesCommandes();
-        },
-
-        terminerCommande: async (id) => {
-          const commande = get().commandesBar.find((c) => c.id === id);
-          if (!commande) return;
-
-          set((state) => ({
-            commandesBar: state.commandesBar.filter((c) => c.id !== id),
-            historique: [...state.historique, { ...commande, statut: "terminée" }],
-          }));
-
-          const [{ error }] = await Promise.all([
-            supabase.from("commandes").update({ statut: "terminée" }).eq("id", id),
-            get().setStatutTable(commande.table, "occupée"),
-          ]);
-
-          if (error) await rechargerToutesCommandes();
-        },
-
-        supprimerHistorique: async (id) => {
-          set((state) => ({
-            historique: state.historique.filter((c) => c.id !== id),
-          }));
-
-          const { error } = await supabase.from("commandes").delete().eq("id", id);
-          if (error) await rechargerToutesCommandes();
-        },
-
-        viderHistorique: async () => {
-          set({ historique: [] });
-
-          const { error } = await supabase
-            .from("commandes")
-            .delete()
-            .eq("statut", "terminée");
-
-          if (error) await rechargerToutesCommandes();
-        },
-      };
-    },
-    {
-      name: "commandes-bar",
+  // (Re)crée les abonnements temps réel s'ils n'existent pas ou ont été perdus.
+  const assurerTempsReel = () => {
+    if (!canalTables) {
+      canalTables = ecouter("tables-live", "tables", rechargerTables, () => {
+        canalTables = null;
+      });
     }
-  )
-);
+
+    if (!canalCommandes) {
+      canalCommandes = ecouter(
+        "commandes-live",
+        "commandes",
+        rechargerToutesCommandes,
+        () => {
+          canalCommandes = null;
+        }
+      );
+    }
+  };
+
+  return {
+    connexionOk: true,
+    commandesBar: [],
+    historique: [],
+    statutsTables: {},
+    infosTables: {},
+
+    setStatutTable: async (table, statut) => {
+      const infos = get().infosTables[table] || INFOS_VIDES;
+
+      // Affichage immédiat, puis Supabase. En cas d'échec, on revient
+      // à l'état réel pour ne pas afficher quelque chose de faux.
+      set((state) => ({
+        statutsTables: { ...state.statutsTables, [table]: statut },
+      }));
+
+      const ok = await enregistrerTable(table, { statut }, statut, infos);
+      if (!ok) await rechargerTables();
+    },
+
+    setInfosTable: async (table, infos) => {
+      const statut = get().statutsTables[table] || "occupée";
+
+      set((state) => ({
+        infosTables: { ...state.infosTables, [table]: infos },
+      }));
+
+      const ok = await enregistrerTable(
+        table,
+        {
+          nom_client: infos.nom,
+          telephone: infos.telephone,
+          personnes: infos.personnes,
+          note: infos.note,
+        },
+        statut,
+        infos
+      );
+
+      if (!ok) await rechargerTables();
+    },
+
+    chargerTables: async () => {
+      assurerTempsReel();
+      await rechargerTables();
+    },
+
+    chargerCommandes: async () => {
+      assurerTempsReel();
+      await rechargerToutesCommandes();
+    },
+
+    synchroniser: async () => {
+      assurerTempsReel();
+      await Promise.all([rechargerTables(), rechargerCommandesEnCours()]);
+    },
+
+    ajouterCommande: async (table, serveur, items) => {
+      const [{ error }] = await Promise.all([
+        supabase.from("commandes").insert({
+          table_name: table,
+          serveur,
+          statut: "envoyée",
+          items,
+        }),
+        get().setStatutTable(table, "commande"),
+      ]);
+
+      if (error) {
+        await rechargerTables();
+        throw new Error(error.message);
+      }
+
+      await rechargerCommandesEnCours();
+    },
+
+    marquerPrete: async (id) => {
+      const commande = get().commandesBar.find((c) => c.id === id);
+      if (!commande) return;
+
+      set((state) => ({
+        commandesBar: state.commandesBar.map((c) =>
+          c.id === id ? { ...c, statut: "prête" } : c
+        ),
+      }));
+
+      const [{ error }] = await Promise.all([
+        supabase.from("commandes").update({ statut: "prête" }).eq("id", id),
+        get().setStatutTable(commande.table, "prete"),
+      ]);
+
+      if (error) await rechargerToutesCommandes();
+    },
+
+    terminerCommande: async (id) => {
+      const commande = get().commandesBar.find((c) => c.id === id);
+      if (!commande) return;
+
+      set((state) => ({
+        commandesBar: state.commandesBar.filter((c) => c.id !== id),
+        historique: [...state.historique, { ...commande, statut: "terminée" }],
+      }));
+
+      const [{ error }] = await Promise.all([
+        supabase.from("commandes").update({ statut: "terminée" }).eq("id", id),
+        get().setStatutTable(commande.table, "occupée"),
+      ]);
+
+      if (error) await rechargerToutesCommandes();
+    },
+
+    supprimerHistorique: async (id) => {
+      set((state) => ({
+        historique: state.historique.filter((c) => c.id !== id),
+      }));
+
+      const { error } = await supabase.from("commandes").delete().eq("id", id);
+      if (error) await rechargerToutesCommandes();
+    },
+
+    viderHistorique: async () => {
+      set({ historique: [] });
+
+      const { error } = await supabase
+        .from("commandes")
+        .delete()
+        .eq("statut", "terminée");
+
+      if (error) await rechargerToutesCommandes();
+    },
+  };
+});

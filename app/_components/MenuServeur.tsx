@@ -2,6 +2,10 @@
 
 import { useState } from "react";
 import { effetBouton } from "../_lib/styles";
+import { VERSION_APP } from "../_lib/version";
+
+// Affichée dans le menu pour vérifier que tous les appareils ont la même.
+const VERSION = VERSION_APP.slice(0, 7) || "locale";
 
 type Props = {
   serveur: string;
@@ -35,6 +39,10 @@ export default function MenuServeur({ serveur, onDeconnexion }: Props) {
           >
             Se déconnecter
           </button>
+
+          <div className="px-3 pt-1 pb-1.5 text-xs text-doux">
+            Version {VERSION}
+          </div>
         </div>
       )}
     </div>
