@@ -19,6 +19,17 @@ export type InfosTable = {
 
 export type StatutCommande = "envoyée" | "prête" | "terminée";
 
+export type ModePaiement = "cb" | "especes";
+
+export type Paiement = {
+  id: number;
+  table: string;
+  montant: number;
+  mode: ModePaiement;
+  serveur: string;
+  creeLe: string;
+};
+
 export type Commande = {
   id: number;
   table: string;
@@ -58,6 +69,19 @@ type Store = {
   rupturesDisponibles: boolean;
   // Renvoie false si Supabase a refusé l'enregistrement.
   basculerRupture: (nom: string) => Promise<boolean>;
+
+  // Paiements enregistrés (CB SumUp / espèces), partagés entre appareils.
+  paiements: Paiement[];
+  // false tant que la table "paiements" n'existe pas dans Supabase.
+  paiementsDisponibles: boolean;
+  // Renvoient false si Supabase a refusé l'enregistrement.
+  encaisser: (
+    table: string,
+    montant: number,
+    mode: ModePaiement,
+    serveur: string
+  ) => Promise<boolean>;
+  annulerPaiement: (id: number) => Promise<boolean>;
 
   commandesBar: Commande[];
   historique: Commande[];
@@ -156,6 +180,42 @@ const lireRuptures = async () => {
   };
 };
 
+type LignePaiement = {
+  id: number;
+  table_name: string;
+  montant: number | string;
+  mode: ModePaiement;
+  serveur: string | null;
+  created_at: string;
+};
+
+const versPaiement = (p: LignePaiement): Paiement => ({
+  id: p.id,
+  table: p.table_name,
+  montant: Number(p.montant),
+  mode: p.mode,
+  serveur: p.serveur || "",
+  creeLe: p.created_at,
+});
+
+const lirePaiements = async () => {
+  const { data, error } = await supabase
+    .from("paiements")
+    .select("*")
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    return TABLE_ABSENTE.includes(error.code)
+      ? { paiements: [], paiementsDisponibles: false }
+      : null;
+  }
+
+  return {
+    paiements: (data as LignePaiement[]).map(versPaiement),
+    paiementsDisponibles: true,
+  };
+};
+
 const lireTables = async () => {
   const { data } = await supabase.from("tables").select("*");
 
@@ -217,6 +277,7 @@ const enregistrerTable = async (
 let canalCommandes: RealtimeChannel | null = null;
 let canalTables: RealtimeChannel | null = null;
 let canalRuptures: RealtimeChannel | null = null;
+let canalPaiements: RealtimeChannel | null = null;
 
 // Plusieurs changements rapprochés (ex : commande + statut de table)
 // ne déclenchent qu'un seul rechargement.
@@ -290,8 +351,24 @@ export const useCommandeStore = create<Store>()((set, get) => {
     if (ruptures) set(ruptures);
   };
 
+  const rechargerPaiements = async () => {
+    const paiements = await lirePaiements();
+    if (paiements) set(paiements);
+  };
+
   // (Re)crée les abonnements temps réel s'ils n'existent pas ou ont été perdus.
   const assurerTempsReel = () => {
+    if (!canalPaiements && get().paiementsDisponibles) {
+      canalPaiements = ecouter(
+        "paiements-live",
+        "paiements",
+        rechargerPaiements,
+        () => {
+          canalPaiements = null;
+        }
+      );
+    }
+
     if (!canalRuptures && get().rupturesDisponibles) {
       canalRuptures = ecouter("ruptures-live", "ruptures", rechargerRuptures, () => {
         canalRuptures = null;
@@ -398,6 +475,7 @@ export const useCommandeStore = create<Store>()((set, get) => {
         rechargerTables(),
         rechargerCommandesEnCours(),
         rechargerRuptures(),
+        rechargerPaiements(),
       ]);
       assurerTempsReel();
     },
@@ -419,6 +497,46 @@ export const useCommandeStore = create<Store>()((set, get) => {
       }
 
       await rechargerCommandesEnCours();
+    },
+
+    paiements: [],
+    // Confirmé à la première lecture (évite de s'abonner à une table absente).
+    paiementsDisponibles: false,
+
+    encaisser: async (table, montant, mode, serveur) => {
+      // Identifiant provisoire (négatif) jusqu'au rechargement depuis Supabase.
+      const provisoire: Paiement = {
+        id: -Date.now(),
+        table,
+        montant,
+        mode,
+        serveur,
+        creeLe: new Date().toISOString(),
+      };
+
+      set((state) => ({ paiements: [...state.paiements, provisoire] }));
+
+      const { error } = await supabase
+        .from("paiements")
+        .insert({ table_name: table, montant, mode, serveur });
+
+      await rechargerPaiements();
+      return !error;
+    },
+
+    annulerPaiement: async (id) => {
+      set((state) => ({
+        paiements: state.paiements.filter((p) => p.id !== id),
+      }));
+
+      const { error } = await supabase.from("paiements").delete().eq("id", id);
+
+      if (error) {
+        await rechargerPaiements();
+        return false;
+      }
+
+      return true;
     },
 
     transfererTable: async (source, destination) => {
@@ -446,9 +564,12 @@ export const useCommandeStore = create<Store>()((set, get) => {
         historique: state.historique.map((c) =>
           c.table === source ? { ...c, table: destination } : c
         ),
+        paiements: state.paiements.map((p) =>
+          p.table === source ? { ...p, table: destination } : p
+        ),
       }));
 
-      const [okDestination, okSource, { error }] = await Promise.all([
+      const [okDestination, okSource, { error }, resultatPaiements] = await Promise.all([
         enregistrerTable(
           destination,
           {
@@ -479,10 +600,21 @@ export const useCommandeStore = create<Store>()((set, get) => {
           .from("commandes")
           .update({ table_name: destination })
           .eq("table_name", source),
+        // Les paiements déjà faits suivent aussi, pour garder le bon reste à payer.
+        get().paiementsDisponibles
+          ? supabase
+              .from("paiements")
+              .update({ table_name: destination })
+              .eq("table_name", source)
+          : Promise.resolve({ error: null }),
       ]);
 
-      if (!okDestination || !okSource || error) {
-        await Promise.all([rechargerTables(), rechargerToutesCommandes()]);
+      if (!okDestination || !okSource || error || resultatPaiements.error) {
+        await Promise.all([
+          rechargerTables(),
+          rechargerToutesCommandes(),
+          rechargerPaiements(),
+        ]);
         throw new Error("Transfert incomplet");
       }
     },
@@ -531,15 +663,19 @@ export const useCommandeStore = create<Store>()((set, get) => {
       if (error) await rechargerToutesCommandes();
     },
 
+    // Fin de soirée : efface les commandes terminées et tous les paiements.
     viderHistorique: async () => {
-      set({ historique: [] });
+      set({ historique: [], paiements: [] });
 
-      const { error } = await supabase
-        .from("commandes")
-        .delete()
-        .eq("statut", "terminée");
+      const [{ error }, resultatPaiements] = await Promise.all([
+        supabase.from("commandes").delete().eq("statut", "terminée"),
+        get().paiementsDisponibles
+          ? supabase.from("paiements").delete().gte("id", 0)
+          : Promise.resolve({ error: null }),
+      ]);
 
       if (error) await rechargerToutesCommandes();
+      if (resultatPaiements.error) await rechargerPaiements();
     },
   };
 });

@@ -4,7 +4,12 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useCommandeStore } from "../_lib/store";
 import { nomSurUneLigne } from "../_lib/carte";
-import { grouperParTable, statistiquesSoiree } from "../_lib/calculs";
+import {
+  grouperParTable,
+  statistiquesEncaissement,
+  statistiquesSoiree,
+} from "../_lib/calculs";
+import { formatEuros } from "../_lib/argent";
 import { genererRapportPDF } from "../_lib/rapport";
 import { boutons, carte } from "../_lib/styles";
 import { deconnecterServeur, useAcces, useServeur } from "../_lib/session";
@@ -22,6 +27,9 @@ export default function DashboardPage() {
   const chargerCommandes = useCommandeStore((state) => state.chargerCommandes);
   const supprimerHistorique = useCommandeStore((state) => state.supprimerHistorique);
   const viderHistorique = useCommandeStore((state) => state.viderHistorique);
+  const commandesBar = useCommandeStore((state) => state.commandesBar);
+  const paiements = useCommandeStore((state) => state.paiements);
+  const paiementsDisponibles = useCommandeStore((state) => state.paiementsDisponibles);
 
   // Charge l'historique depuis Supabase, même si on arrive directement ici.
   useEffect(() => {
@@ -31,6 +39,9 @@ export default function DashboardPage() {
   const stats = statistiquesSoiree(historique);
   const historiqueParTable = grouperParTable(historique);
   const quantiteMax = stats.ventesParBoisson[0]?.quantite || 1;
+  const encaissement = paiementsDisponibles
+    ? statistiquesEncaissement([...historique, ...commandesBar], paiements)
+    : null;
 
   if (!autorise) return null;
 
@@ -74,10 +85,31 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {encaissement && (
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: "CB SumUp", valeur: encaissement.cb, couleur: "" },
+              { label: "Espèces", valeur: encaissement.especes, couleur: "" },
+              {
+                label: "Reste dû",
+                valeur: encaissement.resteDu,
+                couleur: encaissement.resteDu > 0 ? "text-ambre" : "text-sauge",
+              },
+            ].map(({ label, valeur, couleur }) => (
+              <div key={label} className={`flex flex-col gap-1 p-4 ${carte}`}>
+                <span className="text-sm text-doux">{label}</span>
+                <span className={`text-xl font-semibold tracking-[-0.02em] ${couleur}`}>
+                  {formatEuros(valeur)}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
-            onClick={() => genererRapportPDF(stats)}
+            onClick={() => genererRapportPDF(stats, encaissement)}
             className={`h-12 text-[15px] ${boutons.secondaire}`}
           >
             <IconeTelecharger taille={18} />
@@ -87,7 +119,11 @@ export default function DashboardPage() {
           <button
             type="button"
             onClick={() => {
-              if (confirm("Voulez-vous vraiment vider tout l'historique ?")) {
+              if (
+                confirm(
+                  "Vider l'historique ? Les commandes terminées et tous les paiements de la soirée seront effacés."
+                )
+              ) {
                 viderHistorique();
               }
             }}

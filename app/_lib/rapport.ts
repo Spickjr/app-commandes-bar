@@ -1,4 +1,5 @@
-import type { StatistiquesSoiree } from "./calculs";
+import type { StatistiquesEncaissement, StatistiquesSoiree } from "./calculs";
+import { formatEuros } from "./argent";
 
 // Rapport de fin de soirée : ouvre une fenêtre avec uniquement la synthèse
 // puis lance l'impression (enregistrer en PDF depuis la boîte d'impression).
@@ -9,7 +10,10 @@ const echapper = (texte: string) =>
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 
-export const genererRapportPDF = (stats: StatistiquesSoiree) => {
+export const genererRapportPDF = (
+  stats: StatistiquesSoiree,
+  encaissement: StatistiquesEncaissement | null = null
+) => {
   const date = new Date().toLocaleString("fr-FR");
 
   const lignesBoissons = stats.ventesParBoisson
@@ -116,6 +120,27 @@ export const genererRapportPDF = (stats: StatistiquesSoiree) => {
               <div class="value">${stats.totalBoissons}</div>
             </div>
           </div>
+
+          ${
+            encaissement
+              ? `
+          <h2>Encaissements</h2>
+          <div class="stats">
+            <div class="card">
+              <div class="label">CB (SumUp)</div>
+              <div class="value">${formatEuros(encaissement.cb)}</div>
+            </div>
+            <div class="card">
+              <div class="label">Espèces</div>
+              <div class="value">${formatEuros(encaissement.especes)}</div>
+            </div>
+            <div class="card">
+              <div class="label">Reste dû</div>
+              <div class="value">${formatEuros(encaissement.resteDu)}</div>
+            </div>
+          </div>`
+              : ""
+          }
 
           <h2>Détail des ventes</h2>
 

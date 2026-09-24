@@ -1,4 +1,5 @@
-import type { Commande, ItemCommande } from "./store";
+import type { Commande, ItemCommande, Paiement } from "./store";
+import { arrondir } from "./argent";
 
 export type VenteBoisson = {
   nom: string;
@@ -55,3 +56,56 @@ export const grouperParTable = (commandes: Commande[]) =>
     groupes[commande.table].push(commande);
     return groupes;
   }, {} as Record<string, Commande[]>);
+
+// Addition d'une table : tout ce qui a été commandé (en cours et servi)
+// moins ce qui a déjà été encaissé.
+export const additionTable = (
+  table: string,
+  commandes: Commande[],
+  paiements: Paiement[]
+) => {
+  const total = commandes
+    .filter((c) => c.table === table)
+    .reduce((somme, c) => somme + totalItems(c.items), 0);
+
+  const paye = paiements
+    .filter((p) => p.table === table)
+    .reduce((somme, p) => somme + p.montant, 0);
+
+  return {
+    total: arrondir(total),
+    paye: arrondir(paye),
+    reste: Math.max(0, arrondir(total - paye)),
+  };
+};
+
+// Encaissements de la soirée, pour le Dashboard et le rapport.
+export const statistiquesEncaissement = (
+  commandes: Commande[],
+  paiements: Paiement[]
+) => {
+  const tables = new Set([
+    ...commandes.map((c) => c.table),
+    ...paiements.map((p) => p.table),
+  ]);
+
+  const somme = (mode: Paiement["mode"]) =>
+    arrondir(
+      paiements
+        .filter((p) => p.mode === mode)
+        .reduce((total, p) => total + p.montant, 0)
+    );
+
+  return {
+    cb: somme("cb"),
+    especes: somme("especes"),
+    resteDu: arrondir(
+      [...tables].reduce(
+        (total, table) => total + additionTable(table, commandes, paiements).reste,
+        0
+      )
+    ),
+  };
+};
+
+export type StatistiquesEncaissement = ReturnType<typeof statistiquesEncaissement>;
