@@ -15,8 +15,6 @@ export default function Home() {
   const router = useRouter();
   const serveur = useServeur();
 
-  const chargerCommandes = useCommandeStore((state) => state.chargerCommandes);
-  const chargerTables = useCommandeStore((state) => state.chargerTables);
   const commandesBar = useCommandeStore((state) => state.commandesBar);
   const statutsTables = useCommandeStore((state) => state.statutsTables);
   const infosTables = useCommandeStore((state) => state.infosTables);
@@ -26,10 +24,7 @@ export default function Home() {
     if (!lireServeur()) {
       router.push("/serveur");
     }
-
-    chargerCommandes();
-    chargerTables();
-  }, [router, chargerCommandes, chargerTables]);
+  }, [router]);
 
   const deconnexion = () => {
     deconnecterServeur();

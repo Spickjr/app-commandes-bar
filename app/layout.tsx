@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { DM_Sans } from "next/font/google";
 import "./globals.css";
+import Synchro from "./_components/Synchro";
 
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",
@@ -27,7 +28,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" className={`${dmSans.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col font-sans">{children}</body>
+      <body className="min-h-full flex flex-col font-sans">
+        <Synchro />
+        {children}
+      </body>
     </html>
   );
 }
