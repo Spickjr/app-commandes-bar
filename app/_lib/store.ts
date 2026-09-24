@@ -74,7 +74,7 @@ type Store = {
   // Rafraîchissement léger : tables + commandes en cours.
   synchroniser: () => Promise<void>;
 
-  // Déplace le client (infos, statut, commandes en cours) vers une table libre.
+  // Déplace le client (infos, statut, toutes ses commandes) vers une table libre.
   transfererTable: (source: string, destination: string) => Promise<void>;
 
   marquerPrete: (id: number) => Promise<void>;
@@ -377,6 +377,9 @@ export const useCommandeStore = create<Store>()((set, get) => {
         commandesBar: state.commandesBar.map((c) =>
           c.table === source ? { ...c, table: destination } : c
         ),
+        historique: state.historique.map((c) =>
+          c.table === source ? { ...c, table: destination } : c
+        ),
       }));
 
       const [okDestination, okSource, { error }] = await Promise.all([
@@ -404,13 +407,12 @@ export const useCommandeStore = create<Store>()((set, get) => {
           "libre",
           INFOS_VIDES
         ),
-        // Seules les commandes en cours suivent le client ; l'historique
-        // reste sur la table où il a été servi.
+        // Toutes les commandes (en cours et historique) suivent le client,
+        // pour que son total reste sur sa nouvelle table.
         supabase
           .from("commandes")
           .update({ table_name: destination })
-          .eq("table_name", source)
-          .neq("statut", "terminée"),
+          .eq("table_name", source),
       ]);
 
       if (!okDestination || !okSource || error) {
