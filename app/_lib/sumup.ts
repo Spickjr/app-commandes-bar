@@ -2,13 +2,20 @@
 // montant, le client paie (Tap to Pay ou terminal), puis SumUp revient sur
 // /sumup/retour qui enregistre le paiement CB.
 //
+// Fonctionne sur iPhone et Android (paramètres des deux versions envoyés).
+//
 // Réglages (Vercel → Settings → Environment Variables) :
-// - NEXT_PUBLIC_SUMUP_AFFILIATE_KEY : clé affilié créée sur me.sumup.com → Developers
-// - NEXT_PUBLIC_SUMUP_APP_ID (facultatif) : identifiant d'app associé à la clé
+// - NEXT_PUBLIC_SUMUP_AFFILIATE_KEY : clé affilié (SumUp → Paramètres →
+//   Pour les développeurs → Toolkit → Affiliate Keys)
+// - NEXT_PUBLIC_SUMUP_APP_ID (facultatif) : « Application identifier » saisi
+//   lors de la création de la clé ; par défaut APP_ID_PAR_DEFAUT.
 // Sans clé, le bouton « Payer avec SumUp » n'apparaît pas.
 
+// Identifiant à saisir comme « Application identifier » chez SumUp.
+export const APP_ID_PAR_DEFAUT = "com.ofcourse.commandesbar";
+
 const CLE = process.env.NEXT_PUBLIC_SUMUP_AFFILIATE_KEY || "";
-const APP_ID = process.env.NEXT_PUBLIC_SUMUP_APP_ID || "";
+const APP_ID = process.env.NEXT_PUBLIC_SUMUP_APP_ID || APP_ID_PAR_DEFAUT;
 
 export const sumupActif = CLE !== "";
 
@@ -31,16 +38,20 @@ export const lienPaiementSumUp = ({
   retour.searchParams.set("ref", reference);
 
   const parametres = new URLSearchParams({
+    // iPhone lit « amount », Android préfère « total » : on envoie les deux.
     amount: montant.toFixed(2),
+    total: montant.toFixed(2),
     currency: "EUR",
     "affiliate-key": CLE,
+    // Obligatoire sur Android.
+    "app-id": APP_ID,
     title: `Of Course ! · ${table}`,
     "foreign-tx-id": reference,
+    // Retour après paiement : iPhone (succès / échec) et Android (un seul).
     callbacksuccess: retour.toString(),
     callbackfail: retour.toString(),
+    callback: retour.toString(),
   });
-
-  if (APP_ID) parametres.set("app-id", APP_ID);
 
   return `sumupmerchant://pay/1.0?${parametres.toString()}`;
 };
