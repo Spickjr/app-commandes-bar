@@ -15,6 +15,8 @@ type Props = {
   onFermer: () => void;
 };
 
+const PARTS_MAX = 50;
+
 const champ =
   "h-14 w-full rounded-[14px] border border-ligne bg-fond px-4 text-2xl font-semibold text-texte outline-none focus:border-doux";
 
@@ -39,10 +41,12 @@ export default function Encaissement({
   const montantRecu = lireMontant(recu);
   const aRendre = recu && montantRecu >= montant ? arrondir(montantRecu - montant) : null;
 
-  // Parts proposées pour les clients qui paient séparément.
-  const parts = [...new Set([2, 3, 4, personnes])]
-    .filter((n) => n >= 2 && n <= 20)
-    .sort((a, b) => a - b);
+  // Nombre de parts pour les clients qui paient séparément
+  // (par défaut, le nombre de personnes à la table).
+  const [parts, setParts] = useState(
+    personnes >= 2 ? Math.min(personnes, PARTS_MAX) : 2
+  );
+  const parPart = arrondir(reste / parts);
 
   const choisir = (valeur: number) => {
     setSaisie(String(arrondir(valeur)).replace(".", ","));
@@ -122,25 +126,50 @@ export default function Encaissement({
           </div>
         </label>
 
-        <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => choisir(reste)}
+          className={`h-11 text-[15px] ${boutons.secondaire}`}
+        >
+          Tout · {formatEuros(reste)}
+        </button>
+
+        <div className="flex flex-col gap-3 rounded-2xl border border-ligne p-3">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-[15px] font-semibold">Diviser en</span>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                aria-label="Une part de moins"
+                onClick={() => setParts((n) => Math.max(2, n - 1))}
+                disabled={parts <= 2}
+                className={`size-10 text-xl ${boutons.secondaire}`}
+              >
+                −
+              </button>
+              <span className="min-w-20 text-center text-[17px] font-semibold tabular-nums">
+                {parts} parts
+              </span>
+              <button
+                type="button"
+                aria-label="Une part de plus"
+                onClick={() => setParts((n) => Math.min(PARTS_MAX, n + 1))}
+                disabled={parts >= PARTS_MAX}
+                className={`size-10 text-xl ${boutons.secondaire}`}
+              >
+                +
+              </button>
+            </div>
+          </div>
+
           <button
             type="button"
-            onClick={() => choisir(reste)}
-            className={`h-10 rounded-full px-4 text-sm ${boutons.secondaire}`}
+            onClick={() => choisir(parPart)}
+            className={`h-11 text-[15px] ${boutons.secondaire}`}
           >
-            Tout
+            Diviser : {formatEuros(parPart)} par personne
           </button>
-
-          {parts.map((n) => (
-            <button
-              type="button"
-              key={n}
-              onClick={() => choisir(reste / n)}
-              className={`h-10 rounded-full px-4 text-sm ${boutons.secondaire}`}
-            >
-              ÷ {n}
-            </button>
-          ))}
         </div>
 
         <div role="radiogroup" aria-label="Mode de paiement" className="grid grid-cols-2 gap-2">
