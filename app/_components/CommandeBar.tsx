@@ -1,9 +1,16 @@
 import type { Commande } from "../_lib/store";
 import { nomSurUneLigne } from "../_lib/carte";
-import { ALERTE_ATTENTE_MINUTES } from "../_lib/config";
+import { ALERTE_ATTENTE_MINUTES, ALERTE_RECUPERATION_MINUTES } from "../_lib/config";
 import { totalItems } from "../_lib/calculs";
 import { boutons } from "../_lib/styles";
-import { attenteMs, estEnRetard, formatChrono, useMaintenant } from "../_lib/temps";
+import {
+  attenteMs,
+  attentePreteMs,
+  estEnRetard,
+  estPreteEnRetard,
+  formatChrono,
+  useMaintenant,
+} from "../_lib/temps";
 
 type Props = {
   commande: Commande;
@@ -24,13 +31,23 @@ export default function CommandeBar({
   const prete = commande.statut === "prête";
   const maintenant = useMaintenant();
   const enRetard = estEnRetard(commande, maintenant);
+  // Prête mais pas encore récupérée par le serveur depuis trop longtemps.
+  const aRecuperer = estPreteEnRetard(commande, maintenant);
+  const urgent = enRetard || aRecuperer;
+
+  // Chrono : depuis l'envoi tant qu'elle n'est pas prête, puis depuis qu'elle est prête.
+  const chrono = prete
+    ? commande.preteLe
+      ? attentePreteMs(commande, maintenant)
+      : null
+    : attenteMs(commande, maintenant);
 
   return (
     <div
       className={`flex flex-col gap-3 rounded-[20px] border p-4 transition-colors duration-500 ${
-        prete ? "bg-sauge-fond" : "bg-carte"
+        aRecuperer ? "bg-rouge-fond" : prete ? "bg-sauge-fond" : "bg-carte"
       } ${
-        enRetard
+        urgent
           ? "border-rouge"
           : nouvelle
             ? "border-ambre-vif"
@@ -47,19 +64,21 @@ export default function CommandeBar({
           </span>
         </div>
 
-        {!prete && maintenant > 0 && (
+        {chrono !== null && maintenant > 0 && (
           <span
             className={`ml-auto font-semibold tabular-nums ${
-              enRetard ? "text-rouge" : "text-doux"
+              urgent ? "text-rouge" : prete ? "text-sauge" : "text-doux"
             } text-sm`}
-            aria-label="Temps d’attente"
+            aria-label={prete ? "Prête depuis" : "Temps d’attente"}
           >
-            {formatChrono(attenteMs(commande, maintenant))}
+            {formatChrono(chrono)}
           </span>
         )}
 
         {nouvelle ? (
           <span className={`${pastille} bg-ambre/15 text-ambre`}>Nouvelle</span>
+        ) : aRecuperer ? (
+          <span className={`${pastille} bg-rouge/15 text-rouge`}>Urgent</span>
         ) : prete ? (
           <span className={`${pastille} bg-sauge/15 text-sauge`}>Prête</span>
         ) : (
@@ -70,6 +89,13 @@ export default function CommandeBar({
       {enRetard && (
         <p className="-mt-1 text-[13px] font-semibold text-rouge">
           En attente depuis plus de {ALERTE_ATTENTE_MINUTES} minutes
+        </p>
+      )}
+
+      {aRecuperer && (
+        <p className="-mt-1 text-[13px] font-semibold text-rouge">
+          Prête depuis plus de {ALERTE_RECUPERATION_MINUTES} minutes : pas encore
+          récupérée
         </p>
       )}
 
