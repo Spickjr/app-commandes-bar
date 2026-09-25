@@ -117,6 +117,8 @@ type Store = {
 
   supprimerHistorique: (id: number) => Promise<void>;
   viderHistorique: () => Promise<void>;
+  // Toutes les tables libres, sans nom, téléphone, personnes ni note.
+  reinitialiserTables: () => Promise<boolean>;
 };
 
 const INFOS_VIDES: InfosTable = {
@@ -715,6 +717,24 @@ export const useCommandeStore = create<Store>()((set, get) => {
 
       if (error) await rechargerToutesCommandes();
       if (resultatPaiements.error) await rechargerPaiements();
+    },
+
+    reinitialiserTables: async () => {
+      set({ statutsTables: {}, infosTables: {} });
+
+      const { error } = await supabase
+        .from("tables")
+        .update({
+          statut: "libre",
+          nom_client: "",
+          telephone: "",
+          personnes: 0,
+          note: "",
+        })
+        .neq("table_name", "");
+
+      if (error) await rechargerTables();
+      return !error;
     },
   };
 });
