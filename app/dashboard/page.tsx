@@ -28,6 +28,9 @@ export default function DashboardPage() {
   const chargerCommandes = useCommandeStore((state) => state.chargerCommandes);
   const supprimerHistorique = useCommandeStore((state) => state.supprimerHistorique);
   const viderHistorique = useCommandeStore((state) => state.viderHistorique);
+  const reinitialiserTables = useCommandeStore(
+    (state) => state.reinitialiserTables
+  );
   const commandesBar = useCommandeStore((state) => state.commandesBar);
   const paiements = useCommandeStore((state) => state.paiements);
   const paiementsDisponibles = useCommandeStore((state) => state.paiementsDisponibles);
@@ -134,6 +137,23 @@ export default function DashboardPage() {
             Vider l’historique
           </button>
         </div>
+
+        <button
+          type="button"
+          onClick={async () => {
+            if (
+              confirm(
+                "Réinitialiser toutes les tables ? Elles repassent libres et les noms, téléphones, nombres de personnes et notes sont effacés."
+              ) &&
+              !(await reinitialiserTables())
+            ) {
+              alert("Réinitialisation impossible : vérifie le réseau et réessaie.");
+            }
+          }}
+          className={`h-12 text-[15px] ${boutons.danger}`}
+        >
+          Réinitialiser les tables
+        </button>
 
         <div className={`flex flex-col gap-3.5 p-[18px] ${carte}`}>
           <span className="text-base font-semibold">Top boissons</span>
