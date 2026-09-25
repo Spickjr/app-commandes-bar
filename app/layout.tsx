@@ -3,6 +3,7 @@ import { DM_Sans } from "next/font/google";
 import "./globals.css";
 import AlerteAttente from "./_components/AlerteAttente";
 import Synchro from "./_components/Synchro";
+import SuiviSumUp from "./_components/SuiviSumUp";
 
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",
@@ -32,6 +33,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col font-sans">
         <Synchro />
         <AlerteAttente />
+        <SuiviSumUp />
         {children}
       </body>
     </html>
