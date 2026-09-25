@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { ALERTE_ATTENTE_MINUTES } from "./config";
+import { ALERTE_ATTENTE_MINUTES, ALERTE_RECUPERATION_MINUTES } from "./config";
 import type { Commande } from "./store";
 
 // Horloge partagée : un seul minuteur (1 s) pour tous les chronos de l'écran.
@@ -57,3 +57,16 @@ export const formatChrono = (ms: number) => {
   const minutes = Math.floor(secondes / 60);
   return `${minutes}:${String(secondes % 60).padStart(2, "0")}`;
 };
+
+const SEUIL_RECUPERATION_MS = ALERTE_RECUPERATION_MINUTES * 60 * 1000;
+
+// Temps écoulé depuis que la commande est prête (0 si inconnue ou pas prête).
+export const attentePreteMs = (commande: Commande, heure: number) =>
+  heure && commande.statut === "prête" && commande.preteLe
+    ? Math.max(0, heure - new Date(commande.preteLe).getTime())
+    : 0;
+
+// Commande prête qui attend d'être récupérée depuis trop longtemps (serveurs).
+export const estPreteEnRetard = (commande: Commande, heure: number) =>
+  commande.statut === "prête" &&
+  attentePreteMs(commande, heure) >= SEUIL_RECUPERATION_MS;

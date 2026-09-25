@@ -17,6 +17,12 @@ import Panier from "../../_components/Panier";
 import TransfertTable from "../../_components/TransfertTable";
 import Addition from "../../_components/Addition";
 import { additionTable } from "../../_lib/calculs";
+import {
+  attentePreteMs,
+  estPreteEnRetard,
+  formatChrono,
+  useMaintenant,
+} from "../../_lib/temps";
 
 export default function TablePage() {
   const params = useParams();
@@ -81,6 +87,17 @@ export default function TablePage() {
     router.replace(`/table/${destination}`);
   };
 
+  // Chrono « prête » : depuis combien de temps la commande attend d'être récupérée.
+  const maintenant = useMaintenant();
+  const pretes = commandesBar.filter(
+    (c) => c.table === tableNom && c.statut === "prête"
+  );
+  const preteDepuisMs =
+    pretes.length > 0 && maintenant
+      ? Math.max(...pretes.map((c) => attentePreteMs(c, maintenant)))
+      : null;
+  const urgent = pretes.some((c) => estPreteEnRetard(c, maintenant));
+
   const addition = additionTable(
     tableNom,
     [...historique, ...commandesBar],
@@ -129,9 +146,12 @@ export default function TablePage() {
 
           {etat !== "libre" && (
             <span
-              className={`rounded-full px-2.5 py-1 text-xs font-semibold ${STYLE_ETAT[etat].pastille}`}
+              className={`rounded-full px-2.5 py-1 text-xs font-semibold tabular-nums ${
+                urgent ? "bg-rouge/15 text-rouge" : STYLE_ETAT[etat].pastille
+              }`}
             >
-              {STYLE_ETAT[etat].label}
+              {urgent ? "Urgent" : STYLE_ETAT[etat].label}
+              {preteDepuisMs !== null && ` · ${formatChrono(preteDepuisMs)}`}
             </span>
           )}
         </div>

@@ -4,13 +4,14 @@ import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { useCommandeStore } from "../_lib/store";
-import { ALERTE_ATTENTE_MINUTES } from "../_lib/config";
-import { estEnRetard, useMaintenant } from "../_lib/temps";
+import { ALERTE_ATTENTE_MINUTES, ALERTE_RECUPERATION_MINUTES } from "../_lib/config";
+import { estEnRetard, estPreteEnRetard, useMaintenant } from "../_lib/temps";
 import { useRole } from "../_lib/session";
 
-// Message affiché quand des commandes attendent depuis plus de
-// ALERTE_ATTENTE_MINUTES sans être prêtes. Fixé en haut de l'écran partout,
-// sauf sur l'écran du bar où il est intégré à la page (`integree`).
+// Alerte d'urgence, différente selon le profil :
+// - bar : commandes envoyées pas encore prêtes depuis ALERTE_ATTENTE_MINUTES ;
+// - serveur : commandes prêtes pas encore récupérées depuis ALERTE_RECUPERATION_MINUTES.
+// Fixée à l'écran partout, sauf sur l'écran du bar où elle est intégrée (`integree`).
 export default function AlerteAttente({ integree = false }: { integree?: boolean }) {
   const commandesBar = useCommandeStore((state) => state.commandesBar);
   const connexionOk = useCommandeStore((state) => state.connexionOk);
@@ -22,8 +23,12 @@ export default function AlerteAttente({ integree = false }: { integree?: boolean
   const actif =
     connexionOk && chemin !== "/serveur" && (integree ? surLeBar : !surLeBar);
 
+  const pourLeBar = role === "bar";
+
   const enRetard = actif
-    ? commandesBar.filter((c) => estEnRetard(c, maintenant))
+    ? commandesBar.filter((c) =>
+        pourLeBar ? estEnRetard(c, maintenant) : estPreteEnRetard(c, maintenant)
+      )
     : [];
   const idsEnRetard = enRetard.map((c) => c.id).join(",");
 
@@ -45,13 +50,18 @@ export default function AlerteAttente({ integree = false }: { integree?: boolean
     .map((c) => c.table.replace("Table ", ""))
     .join(", ");
 
-  const message =
-    enRetard.length === 1
-      ? `Commande en attente depuis plus de ${ALERTE_ATTENTE_MINUTES} min`
-      : `${enRetard.length} commandes en attente depuis plus de ${ALERTE_ATTENTE_MINUTES} min`;
+  const plusieurs = enRetard.length > 1;
+
+  const message = pourLeBar
+    ? plusieurs
+      ? `${enRetard.length} commandes en attente depuis plus de ${ALERTE_ATTENTE_MINUTES} min`
+      : `Commande en attente depuis plus de ${ALERTE_ATTENTE_MINUTES} min`
+    : plusieurs
+      ? `${enRetard.length} commandes prêtes à récupérer depuis plus de ${ALERTE_RECUPERATION_MINUTES} min`
+      : `Commande prête à récupérer depuis plus de ${ALERTE_RECUPERATION_MINUTES} min`;
 
   // Les serveurs voient l'alerte mais n'ont pas accès à l'écran du bar.
-  const lienVersBar = role === "bar" && !integree;
+  const lienVersBar = pourLeBar && !integree;
 
   const classes = `flex items-center gap-3 rounded-2xl border border-rouge-bord bg-carte px-4 py-3 ${
     integree

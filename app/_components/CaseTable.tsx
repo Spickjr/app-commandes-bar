@@ -3,6 +3,7 @@ import type { InfosTable } from "../_lib/store";
 import { STYLE_ETAT, type EtatTable } from "../_lib/tables";
 import { boutons } from "../_lib/styles";
 import { formatEuros } from "../_lib/argent";
+import { formatChrono } from "../_lib/temps";
 
 type Props = {
   numero: number;
@@ -10,6 +11,10 @@ type Props = {
   infos?: InfosTable;
   // Reste à payer de l'addition en cours (rien n'est affiché à 0).
   reste?: number | null;
+  // Temps depuis que la commande est prête (null si rien de prêt).
+  preteDepuisMs?: number | null;
+  // Prête depuis trop longtemps : à récupérer d'urgence.
+  urgent?: boolean;
   onClientArrive: () => void;
   onLiberer: () => void;
 };
@@ -19,6 +24,8 @@ export default function CaseTable({
   etat,
   infos,
   reste = null,
+  preteDepuisMs = null,
+  urgent = false,
   onClientArrive,
   onLiberer,
 }: Props) {
@@ -27,7 +34,9 @@ export default function CaseTable({
 
   return (
     <div
-      className={`flex flex-col gap-3 rounded-[20px] p-3.5 transition-colors duration-300 ${style.fond}`}
+      className={`flex flex-col gap-3 rounded-[20px] p-3.5 transition-colors duration-300 ${
+        urgent ? "bg-rouge-fond ring-1 ring-rouge/60" : style.fond
+      }`}
     >
       <Link
         href={`/table/${numero}`}
@@ -39,11 +48,12 @@ export default function CaseTable({
           </span>
 
           <span
-            className={`rounded-full text-xs ${
+            className={`whitespace-nowrap rounded-full text-xs tabular-nums ${
               libre ? "font-medium" : "px-2.5 py-1 font-semibold"
-            } ${style.pastille}`}
+            } ${urgent ? "bg-rouge/15 text-rouge" : style.pastille}`}
           >
-            {style.label}
+            {urgent ? "Urgent" : style.label}
+            {preteDepuisMs !== null && ` · ${formatChrono(preteDepuisMs)}`}
           </span>
         </div>
 
