@@ -61,3 +61,74 @@ export const lienPaiementSumUp = ({
 
   return `sumupmerchant://pay/1.0?${parametres.toString()}`;
 };
+
+// Paiement SumUp lancé depuis cet appareil, en attente du retour.
+// Sur iPhone, SumUp revient dans Safari et pas dans l'appli de l'écran
+// d'accueil : l'appli retrouve le paiement enregistré par Safari grâce à ce
+// mémo (voir SuiviSumUp).
+export type PaiementEnCours = {
+  table: string;
+  montant: number;
+  serveur: string;
+  // Heure de lancement (ms).
+  depuis: number;
+};
+
+const CLE_EN_COURS = "sumup-en-cours";
+// Au-delà, on considère le paiement abandonné.
+const EXPIRATION_MS = 15 * 60_000;
+const abonnesEnCours = new Set<() => void>();
+
+const lireBrut = () => {
+  try {
+    return localStorage.getItem(CLE_EN_COURS);
+  } catch {
+    return null;
+  }
+};
+
+const prevenir = () => abonnesEnCours.forEach((f) => f());
+
+export const noterPaiementEnCours = (paiement: Omit<PaiementEnCours, "depuis">) => {
+  try {
+    localStorage.setItem(
+      CLE_EN_COURS,
+      JSON.stringify({ ...paiement, depuis: Date.now() })
+    );
+  } catch {}
+  prevenir();
+};
+
+export const oublierPaiementEnCours = () => {
+  try {
+    localStorage.removeItem(CLE_EN_COURS);
+  } catch {}
+  prevenir();
+};
+
+export const abonnerPaiementEnCours = (callback: () => void) => {
+  abonnesEnCours.add(callback);
+  window.addEventListener("storage", callback);
+  return () => {
+    abonnesEnCours.delete(callback);
+    window.removeEventListener("storage", callback);
+  };
+};
+
+// Valeur brute (chaîne) : stable entre deux lectures pour useSyncExternalStore.
+export const lirePaiementEnCoursBrut = lireBrut;
+
+export const analyserPaiementEnCours = (
+  brut: string | null
+): PaiementEnCours | null => {
+  if (!brut) return null;
+  try {
+    const p = JSON.parse(brut) as PaiementEnCours;
+    if (!p.table || !(p.montant > 0) || Date.now() - p.depuis > EXPIRATION_MS) {
+      return null;
+    }
+    return p;
+  } catch {
+    return null;
+  }
+};

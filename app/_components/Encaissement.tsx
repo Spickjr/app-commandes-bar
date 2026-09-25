@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { ModePaiement } from "../_lib/store";
 import { arrondir, formatEuros, lireMontant } from "../_lib/argent";
 import { boutons, effetBouton } from "../_lib/styles";
-import { lienPaiementSumUp, sumupActif } from "../_lib/sumup";
+import { lienPaiementSumUp, noterPaiementEnCours, sumupActif } from "../_lib/sumup";
 
 type Props = {
   table: string;
@@ -72,10 +72,14 @@ export default function Encaissement({
     }
   };
 
-  // Ouvre l'app SumUp avec le montant ; le paiement est enregistré au retour.
+  // Ouvre l'app SumUp avec le montant ; le paiement est enregistré au retour
+  // et SuiviSumUp en affiche le résultat en revenant dans l'appli.
   const payerAvecSumUp = () => {
     if (!montantValide) return;
-    window.location.assign(lienPaiementSumUp({ table, montant, serveur }));
+    noterPaiementEnCours({ table, montant, serveur });
+    const lien = lienPaiementSumUp({ table, montant, serveur });
+    onFermer();
+    window.location.assign(lien);
   };
 
   const avecSumUp = sumupActif && mode === "cb";

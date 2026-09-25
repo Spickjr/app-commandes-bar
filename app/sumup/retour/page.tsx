@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { useCommandeStore } from "../../_lib/store";
 import { formatEuros, lireMontant } from "../../_lib/argent";
 import { boutons } from "../../_lib/styles";
@@ -13,11 +13,21 @@ type Resultat =
 
 const CLE_TRAITES = "sumup-traites";
 
+// Ouverte dans l'appli installée (écran d'accueil) ou dans le navigateur ?
+// Sur iPhone, SumUp revient toujours dans Safari.
+const dansLAppli = () =>
+  window.matchMedia("(display-mode: standalone)").matches ||
+  (navigator as Navigator & { standalone?: boolean }).standalone === true;
+
+const sansAbonnement = () => () => {};
+
 // Page ouverte par l'app SumUp après un paiement : enregistre le paiement CB
-// (une seule fois par référence) puis renvoie vers la table.
+// (une seule fois par référence) puis renvoie vers la table. Dans Safari, on
+// invite à revenir dans l'appli, qui affiche aussi le résultat (SuiviSumUp).
 export default function RetourSumUp() {
   const encaisser = useCommandeStore((state) => state.encaisser);
   const [resultat, setResultat] = useState<Resultat>({ etat: "attente" });
+  const appli = useSyncExternalStore(sansAbonnement, dansLAppli, () => true);
 
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
@@ -110,7 +120,15 @@ export default function RetourSumUp() {
           </>
         )}
 
-        {resultat.etat !== "attente" && (
+        {resultat.etat !== "attente" && !appli && (
+          <p className="rounded-2xl bg-carte px-4 py-3 text-[15px] text-clair">
+            {resultat.etat === "ok"
+              ? "C’est enregistré : reviens sur l’appli Of Course depuis ton écran d’accueil, le paiement y est déjà. Tu peux fermer cet onglet."
+              : "Reviens sur l’appli Of Course depuis ton écran d’accueil pour réessayer. Tu peux fermer cet onglet."}
+          </p>
+        )}
+
+        {resultat.etat !== "attente" && appli && (
           <Link
             href={numero ? `/table/${numero}` : "/"}
             className={`h-[54px] w-full text-base ${boutons.principal}`}
