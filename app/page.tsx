@@ -7,6 +7,7 @@ import { NUMEROS_TABLES, nomTable } from "./_lib/config";
 import { deconnecterServeur, useAcces, useServeur } from "./_lib/session";
 import { STYLE_ETAT, etatTable } from "./_lib/tables";
 import { additionTable } from "./_lib/calculs";
+import { attentePreteMs, estPreteEnRetard, useMaintenant } from "./_lib/temps";
 import CaseTable from "./_components/CaseTable";
 import EnTete from "./_components/EnTete";
 import MenuServeur from "./_components/MenuServeur";
@@ -31,12 +32,29 @@ export default function Home() {
   }, [chargerCommandes]);
 
   const toutesCommandes = [...historique, ...commandesBar];
+  const maintenant = useMaintenant();
 
   const autorise = useAcces("serveur");
 
   const deconnexion = () => {
     deconnecterServeur();
     router.push("/serveur");
+  };
+
+  // Chrono de la commande prête la plus ancienne de la table.
+  const etatRecuperation = (table: string) => {
+    const pretes = commandesBar.filter(
+      (c) => c.table === table && c.statut === "prête"
+    );
+
+    if (pretes.length === 0 || !maintenant) {
+      return { preteDepuisMs: null, urgent: false };
+    }
+
+    return {
+      preteDepuisMs: Math.max(...pretes.map((c) => attentePreteMs(c, maintenant))),
+      urgent: pretes.some((c) => estPreteEnRetard(c, maintenant)),
+    };
   };
 
   if (!autorise) return null;
@@ -72,6 +90,7 @@ export default function Home() {
               numero={numero}
               etat={etatTable(statutsTables[table], commandeEnCours)}
               infos={infosTables[table]}
+              {...etatRecuperation(table)}
               reste={
                 paiementsDisponibles &&
                 toutesCommandes.some((c) => c.table === table)

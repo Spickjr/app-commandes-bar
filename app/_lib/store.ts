@@ -38,6 +38,8 @@ export type Commande = {
   statut: StatutCommande;
   // Date d'envoi au bar (ISO), pour le chrono d'attente.
   creeLe: string;
+  // Date où le bar l'a marquée prête (ISO), pour le chrono de récupération.
+  preteLe?: string;
 };
 
 // Lignes telles qu'elles sont stockées dans Supabase.
@@ -48,6 +50,8 @@ type LigneCommande = {
   items: ItemCommande[];
   statut: StatutCommande;
   created_at: string;
+  // Colonne facultative : absente tant qu'elle n'a pas été ajoutée dans Supabase.
+  prete_le?: string | null;
 };
 
 type LigneTable = {
@@ -124,6 +128,21 @@ const INFOS_VIDES: InfosTable = {
 
 // ---------- Lecture Supabase ----------
 
+// Sans la colonne prete_le, on retient le moment où cet appareil a vu la
+// commande passer « prête » (moins précis, mais le chrono fonctionne).
+const premiereVuePrete = new Map<number, string>();
+
+const heurePrete = (c: LigneCommande) => {
+  if (c.statut !== "prête") return undefined;
+  if (c.prete_le) return c.prete_le;
+
+  if (!premiereVuePrete.has(c.id)) {
+    premiereVuePrete.set(c.id, new Date().toISOString());
+  }
+
+  return premiereVuePrete.get(c.id);
+};
+
 const versCommande = (c: LigneCommande): Commande => ({
   id: c.id,
   table: c.table_name,
@@ -131,7 +150,11 @@ const versCommande = (c: LigneCommande): Commande => ({
   items: c.items,
   statut: c.statut,
   creeLe: c.created_at,
+  preteLe: heurePrete(c),
 });
+
+// Code renvoyé quand une colonne n'existe pas encore dans Supabase.
+const COLONNE_ABSENTE = "PGRST204";
 
 const lireToutesCommandes = async () => {
   const { data } = await supabase
@@ -623,14 +646,30 @@ export const useCommandeStore = create<Store>()((set, get) => {
       const commande = get().commandesBar.find((c) => c.id === id);
       if (!commande) return;
 
+      const preteLe = new Date().toISOString();
+      premiereVuePrete.set(id, preteLe);
+
       set((state) => ({
         commandesBar: state.commandesBar.map((c) =>
-          c.id === id ? { ...c, statut: "prête" } : c
+          c.id === id ? { ...c, statut: "prête", preteLe } : c
         ),
       }));
 
+      // Enregistre aussi l'heure (colonne prete_le) ; si la colonne n'existe
+      // pas encore dans Supabase, on enregistre seulement le statut.
+      const marquer = async () => {
+        const essai = await supabase
+          .from("commandes")
+          .update({ statut: "prête", prete_le: preteLe })
+          .eq("id", id);
+
+        if (essai.error?.code !== COLONNE_ABSENTE) return essai;
+
+        return supabase.from("commandes").update({ statut: "prête" }).eq("id", id);
+      };
+
       const [{ error }] = await Promise.all([
-        supabase.from("commandes").update({ statut: "prête" }).eq("id", id),
+        marquer(),
         get().setStatutTable(commande.table, "prete"),
       ]);
 
