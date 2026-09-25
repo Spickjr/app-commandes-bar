@@ -9,12 +9,18 @@
 //   Pour les développeurs → Toolkit → Affiliate Keys)
 // - NEXT_PUBLIC_SUMUP_APP_ID (facultatif) : « Application identifier » saisi
 //   lors de la création de la clé ; par défaut APP_ID_PAR_DEFAUT.
-// Sans clé, le bouton « Payer avec SumUp » n'apparaît pas.
+// Sans clé, le bouton « Payer avec SumUp » n'apparaît pas (une clé par défaut
+// est fournie ci-dessous).
 
 // Identifiant à saisir comme « Application identifier » chez SumUp.
 export const APP_ID_PAR_DEFAUT = "com.ofcourse.commandesbar";
 
-const CLE = process.env.NEXT_PUBLIC_SUMUP_AFFILIATE_KEY || "";
+// Clé d'affiliation du compte SumUp « ofcourse! » (Paramètres développeur →
+// Clés d'affiliation), liée à APP_ID_PAR_DEFAUT. Ce n'est pas un secret : elle
+// identifie seulement l'app auprès de SumUp.
+const CLE_PAR_DEFAUT = "sup_afk_hh15IZtOJmP1ovyyFjezh6RJ0uSXiLNj";
+
+const CLE = process.env.NEXT_PUBLIC_SUMUP_AFFILIATE_KEY || CLE_PAR_DEFAUT;
 const APP_ID = process.env.NEXT_PUBLIC_SUMUP_APP_ID || APP_ID_PAR_DEFAUT;
 
 export const sumupActif = CLE !== "";
