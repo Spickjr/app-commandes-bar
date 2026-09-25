@@ -9,7 +9,6 @@ import { lienPaiementSumUp, noterPaiementEnCours, sumupActif } from "../_lib/sum
 type Props = {
   table: string;
   reste: number;
-  personnes: number;
   serveur: string;
   onEncaisser: (montant: number, mode: ModePaiement) => Promise<boolean>;
   onFermer: () => void;
@@ -25,7 +24,6 @@ const champ =
 export default function Encaissement({
   table,
   reste,
-  personnes,
   serveur,
   onEncaisser,
   onFermer,
@@ -41,11 +39,8 @@ export default function Encaissement({
   const montantRecu = lireMontant(recu);
   const aRendre = recu && montantRecu >= montant ? arrondir(montantRecu - montant) : null;
 
-  // Nombre de parts pour les clients qui paient séparément
-  // (par défaut, le nombre de personnes à la table).
-  const [parts, setParts] = useState(
-    personnes >= 2 ? Math.min(personnes, PARTS_MAX) : 2
-  );
+  // Nombre de parts pour les clients qui paient séparément (2 au départ).
+  const [parts, setParts] = useState(2);
   const parPart = arrondir(reste / parts);
 
   const choisir = (valeur: number) => {

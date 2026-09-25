@@ -11,7 +11,6 @@ type Props = {
   total: number;
   paye: number;
   reste: number;
-  personnes: number;
   serveur: string;
   paiements: Paiement[];
   disponible: boolean;
@@ -29,7 +28,6 @@ export default function Addition({
   total,
   paye,
   reste,
-  personnes,
   serveur,
   paiements,
   disponible,
@@ -112,7 +110,6 @@ export default function Addition({
         <Encaissement
           table={table}
           reste={reste}
-          personnes={personnes}
           serveur={serveur}
           onEncaisser={onEncaisser}
           onFermer={() => setOuvert(false)}

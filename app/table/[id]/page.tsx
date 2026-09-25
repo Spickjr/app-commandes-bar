@@ -177,7 +177,6 @@ export default function TablePage() {
           total={addition.total}
           paye={addition.paye}
           reste={addition.reste}
-          personnes={infosExistantes?.personnes || 0}
           serveur={serveur || "Non renseigné"}
           paiements={addition.paiementsEnCours}
           disponible={paiementsDisponibles}
