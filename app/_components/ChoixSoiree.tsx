@@ -1,90 +1,90 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useCommandeStore } from "../_lib/store";
 import {
   memoriserSoireeDepuisAdresse,
   oublierSoireeDemandee,
   useSoireeDemandee,
 } from "../_lib/soiree";
+import { ACCUEIL, lireRole } from "../_lib/session";
 import { boutons } from "../_lib/styles";
 
-// Arrivée depuis un événement PILOT : propose de démarrer sa soirée
-// (commandes et paiements repartent de zéro, tables remises à zéro).
+// Déjà connecté sur cet appareil : on va directement dans l'appli.
+const allerDansLAppli = () => {
+  const role = lireRole();
+  if (role) window.location.replace(ACCUEIL[role]);
+};
+
+// Arrivée depuis un événement PILOT (bouton « Caisse bar ») : sa soirée
+// démarre automatiquement sur tous les appareils (tables remises à zéro,
+// commandes et paiements repartent de zéro).
 export default function ChoixSoiree() {
   const demandee = useSoireeDemandee();
   const soiree = useCommandeStore((state) => state.soiree);
   const disponibles = useCommandeStore((state) => state.soireesDisponibles);
   const demarrerSoiree = useCommandeStore((state) => state.demarrerSoiree);
-  const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState("");
+  const [essai, setEssai] = useState(0);
+  const lance = useRef("");
 
   useEffect(() => {
     memoriserSoireeDepuisAdresse();
   }, []);
 
-  // Déjà la soirée en cours : rien à demander.
   const dejaEnCours = demandee !== null && demandee.id === soiree?.id;
+
   useEffect(() => {
-    if (dejaEnCours) oublierSoireeDemandee();
-  }, [dejaEnCours]);
+    if (!demandee || !disponibles) return;
+
+    if (dejaEnCours) {
+      oublierSoireeDemandee();
+      allerDansLAppli();
+      return;
+    }
+
+    // Un seul démarrage par soirée demandée (et par nouvel essai).
+    const cle = `${demandee.id}-${essai}`;
+    if (lance.current === cle) return;
+    lance.current = cle;
+
+    const demarrer = async () => {
+      if (await demarrerSoiree(demandee)) {
+        oublierSoireeDemandee();
+        allerDansLAppli();
+      } else {
+        setErreur("Impossible d’ouvrir la soirée : vérifie le réseau.");
+      }
+    };
+
+    demarrer();
+  }, [demandee, disponibles, dejaEnCours, demarrerSoiree, essai]);
 
   if (!demandee || !disponibles || dejaEnCours) return null;
 
-  const demarrer = async () => {
-    setEnCours(true);
-    setErreur("");
-    if (await demarrerSoiree(demandee)) {
-      oublierSoireeDemandee();
-    } else {
-      setErreur("Impossible de démarrer la soirée : vérifie le réseau et réessaie.");
-    }
-    setEnCours(false);
-  };
-
   return (
     <div
-      role="dialog"
-      aria-labelledby="titre-soiree"
-      className="flex flex-col gap-4 rounded-3xl border border-ambre-bord bg-ambre-fond p-5"
+      role="status"
+      className="flex flex-col gap-3 rounded-3xl border border-ambre-bord bg-ambre-fond p-5"
     >
-      <div className="flex flex-col gap-1.5">
-        <h2 id="titre-soiree" className="text-lg font-semibold">
-          Démarrer « {demandee.nom || "nouvelle soirée"} » ?
-        </h2>
-        <p className="text-[14px] leading-snug text-clair">
-          Tous les appareils passent sur cette soirée : tables libérées,
-          commandes et paiements repartent de zéro.
-          {soiree?.nom
-            ? ` Ceux de « ${soiree.nom} » restent rangés avec son événement.`
-            : ""}
-        </p>
-      </div>
+      <p className="text-[15px] font-semibold">
+        {erreur
+          ? erreur
+          : `Ouverture de la soirée « ${demandee.nom || "nouvelle soirée"} »…`}
+      </p>
 
       {erreur && (
-        <p role="alert" className="text-sm font-medium text-rouge">
-          {erreur}
-        </p>
-      )}
-
-      <div className="grid grid-cols-2 gap-2">
         <button
           type="button"
-          onClick={oublierSoireeDemandee}
-          disabled={enCours}
-          className={`h-12 text-[15px] ${boutons.secondaire}`}
-        >
-          {soiree?.nom ? "Rester" : "Annuler"}
-        </button>
-        <button
-          type="button"
-          onClick={demarrer}
-          disabled={enCours}
+          onClick={() => {
+            setErreur("");
+            setEssai((n) => n + 1);
+          }}
           className={`h-12 text-[15px] ${boutons.principal}`}
         >
-          {enCours ? "Démarrage…" : "Démarrer"}
+          Réessayer
         </button>
-      </div>
+      )}
     </div>
   );
 }
