@@ -1,4 +1,6 @@
 @import "tailwindcss";
+/* Le dossier pilot/ est un autre site (projet Vercel séparé). */
+@source not "../pilot";
 
 /* Palette "soft" : utilisable dans les classes Tailwind (bg-carte, text-doux, border-ligne…) */
 @theme {
