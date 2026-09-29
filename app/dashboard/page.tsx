@@ -18,9 +18,11 @@ import HistoriqueTable from "../_components/HistoriqueTable";
 import { IconeTelecharger } from "../_components/Icones";
 import ListePaiements from "../_components/ListePaiements";
 import MenuServeur from "../_components/MenuServeur";
+import { useSoiree } from "../_lib/soiree";
 import NavBas from "../_components/NavBas";
 
 export default function DashboardPage() {
+  const soiree = useSoiree();
   const router = useRouter();
   const autorise = useAcces("bar");
   const nom = useServeur();
@@ -53,7 +55,7 @@ export default function DashboardPage() {
   return (
     <main className="mx-auto w-full max-w-3xl px-5 pb-28">
       <EnTete
-        surtitre="Soirée en cours"
+        surtitre={soiree?.nom || "Soirée en cours"}
         titre="Dashboard"
         aDroite={
           <MenuServeur
