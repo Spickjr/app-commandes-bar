@@ -32,7 +32,7 @@
 :root[data-theme="dark"] {
   --background: 222 22% 7%;
   --foreground: 210 20% 96%;
-  --card: 222 20% 10%;
+  --card: 222 18% 12%;
   --card-foreground: 210 20% 96%;
   --popover: 222 20% 10%;
   --popover-foreground: 210 20% 96%;
@@ -50,8 +50,8 @@
   --success-foreground: 0 0% 98%;
   --warning: 38 92% 55%;
   --warning-foreground: 222 20% 10%;
-  --border: 222 15% 18%;
-  --input: 222 15% 18%;
+  --border: 222 12% 25%;
+  --input: 220 10% 42%;
   --ring: 210 20% 80%;
 }
 
