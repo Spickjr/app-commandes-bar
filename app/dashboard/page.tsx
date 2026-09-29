@@ -18,11 +18,10 @@ import HistoriqueTable from "../_components/HistoriqueTable";
 import { IconeTelecharger } from "../_components/Icones";
 import ListePaiements from "../_components/ListePaiements";
 import MenuServeur from "../_components/MenuServeur";
-import { useSoiree } from "../_lib/soiree";
 import NavBas from "../_components/NavBas";
 
 export default function DashboardPage() {
-  const soiree = useSoiree();
+  const soiree = useCommandeStore((state) => state.soiree);
   const router = useRouter();
   const autorise = useAcces("bar");
   const nom = useServeur();

@@ -63,9 +63,19 @@ type LigneTable = {
   note: string | null;
 };
 
+export type Soiree = { id: string; nom: string };
+
 type Store = {
   // false quand la dernière lecture Supabase a échoué (bandeau d'alerte).
   connexionOk: boolean;
+
+  // Soirée en cours (événement PILOT), la même sur tous les appareils :
+  // commandes et paiements affichés sont ceux de cette soirée.
+  soiree: Soiree | null;
+  // false tant que la table "soirees" n'existe pas dans Supabase.
+  soireesDisponibles: boolean;
+  // Passe tous les appareils sur une soirée (tables remises à zéro).
+  demarrerSoiree: (soiree: Soiree) => Promise<boolean>;
 
   // Boissons en rupture (noms de la carte), partagées entre appareils.
   ruptures: string[];
@@ -158,11 +168,57 @@ const versCommande = (c: LigneCommande): Commande => ({
 // Code renvoyé quand une colonne n'existe pas encore dans Supabase.
 const COLONNE_ABSENTE = "PGRST204";
 
+// ---------- Soirée en cours ----------
+
+// Codes renvoyés quand la table n'existe pas (pas encore créée dans Supabase).
+const TABLE_ABSENTE = ["PGRST205", "42P01"];
+
+// Connues après la première lecture de la table "soirees".
+let soireesActives = false;
+let soireeCourante: string | null = null;
+
+// Limite une requête aux lignes de la soirée en cours (sans soirée : les
+// lignes d'avant la gestion des soirées). Rien si la table n'existe pas.
+const parSoiree = <T,>(requete: T): T => {
+  if (!soireesActives) return requete;
+  // Requête Supabase : eq() et is() renvoient la même requête, filtrée.
+  const filtrable = requete as unknown as {
+    eq(colonne: string, valeur: string): T;
+    is(colonne: string, valeur: null): T;
+  };
+  return soireeCourante
+    ? filtrable.eq("soiree", soireeCourante)
+    : filtrable.is("soiree", null);
+};
+
+// Champ à ajouter aux nouvelles commandes et nouveaux paiements.
+const champSoiree = () =>
+  soireesActives && soireeCourante ? { soiree: soireeCourante } : {};
+
+const lireSoiree = async () => {
+  const { data, error } = await supabase
+    .from("soirees")
+    .select("id, nom")
+    .order("demarree_le", { ascending: false })
+    .limit(1);
+
+  if (error) {
+    return TABLE_ABSENTE.includes(error.code)
+      ? { soiree: null, soireesDisponibles: false }
+      : null;
+  }
+
+  const ligne = (data as Soiree[])[0];
+  return {
+    soiree: ligne ? { id: ligne.id, nom: ligne.nom || "" } : null,
+    soireesDisponibles: true,
+  };
+};
+
 const lireToutesCommandes = async () => {
-  const { data } = await supabase
-    .from("commandes")
-    .select("*")
-    .order("created_at", { ascending: true });
+  const { data } = await parSoiree(
+    supabase.from("commandes").select("*")
+  ).order("created_at", { ascending: true });
 
   if (!data) return null;
 
@@ -176,19 +232,14 @@ const lireToutesCommandes = async () => {
 
 // Seulement les commandes en cours : léger, utilisé pour les rafraîchissements.
 const lireCommandesEnCours = async () => {
-  const { data } = await supabase
-    .from("commandes")
-    .select("*")
-    .neq("statut", "terminée")
-    .order("created_at", { ascending: true });
+  const { data } = await parSoiree(
+    supabase.from("commandes").select("*").neq("statut", "terminée")
+  ).order("created_at", { ascending: true });
 
   if (!data) return null;
 
   return { commandesBar: (data as LigneCommande[]).map(versCommande) };
 };
-
-// Codes renvoyés quand la table n'existe pas (pas encore créée dans Supabase).
-const TABLE_ABSENTE = ["PGRST205", "42P01"];
 
 const lireRuptures = async () => {
   const { data, error } = await supabase.from("ruptures").select("nom");
@@ -224,10 +275,9 @@ const versPaiement = (p: LignePaiement): Paiement => ({
 });
 
 const lirePaiements = async () => {
-  const { data, error } = await supabase
-    .from("paiements")
-    .select("*")
-    .order("created_at", { ascending: true });
+  const { data, error } = await parSoiree(
+    supabase.from("paiements").select("*")
+  ).order("created_at", { ascending: true });
 
   if (error) {
     return TABLE_ABSENTE.includes(error.code)
@@ -303,6 +353,7 @@ let canalCommandes: RealtimeChannel | null = null;
 let canalTables: RealtimeChannel | null = null;
 let canalRuptures: RealtimeChannel | null = null;
 let canalPaiements: RealtimeChannel | null = null;
+let canalSoirees: RealtimeChannel | null = null;
 
 // Plusieurs changements rapprochés (ex : commande + statut de table)
 // ne déclenchent qu'un seul rechargement.
@@ -356,17 +407,47 @@ const ecouter = (
 // Pas de sauvegarde locale des données : chaque appareil affiche toujours
 // ce qui est dans Supabase (une copie locale pouvait devenir périmée).
 export const useCommandeStore = create<Store>()((set, get) => {
+  // Lit la soirée en cours ; si elle a changé (autre appareil, nouvel
+  // événement), recharge les commandes et paiements de la nouvelle soirée.
+  const rechargerSoiree = async () => {
+    const lu = await lireSoiree();
+    // La toute première lecture ne recharge rien : les autres lectures
+    // l'attendent (assurerSoiree) et se feront déjà avec la bonne soirée.
+    const dejaLue = soireeTentee;
+    soireeTentee = true;
+    if (!lu) return;
+
+    const nouvelleId = lu.soiree?.id ?? null;
+    const change =
+      lu.soireesDisponibles !== soireesActives || nouvelleId !== soireeCourante;
+
+    soireesActives = lu.soireesDisponibles;
+    soireeCourante = nouvelleId;
+    set(lu);
+
+    if (change && dejaLue) {
+      await Promise.all([rechargerToutesCommandes(), rechargerPaiements()]);
+    }
+  };
+
+  // Toutes les lectures attendent de connaître la soirée en cours.
+  let premiereLecture: Promise<void> | null = null;
+  let soireeTentee = false;
+  const assurerSoiree = () => (premiereLecture ??= rechargerSoiree());
+
   const rechargerTables = async () => {
     const tables = await lireTables();
     set(tables ? { ...tables, connexionOk: true } : { connexionOk: false });
   };
 
   const rechargerToutesCommandes = async () => {
+    await assurerSoiree();
     const commandes = await lireToutesCommandes();
     set(commandes ? { ...commandes, connexionOk: true } : { connexionOk: false });
   };
 
   const rechargerCommandesEnCours = async () => {
+    await assurerSoiree();
     const commandes = await lireCommandesEnCours();
     set(commandes ? { ...commandes, connexionOk: true } : { connexionOk: false });
   };
@@ -377,12 +458,19 @@ export const useCommandeStore = create<Store>()((set, get) => {
   };
 
   const rechargerPaiements = async () => {
+    await assurerSoiree();
     const paiements = await lirePaiements();
     if (paiements) set(paiements);
   };
 
   // (Re)crée les abonnements temps réel s'ils n'existent pas ou ont été perdus.
   const assurerTempsReel = () => {
+    if (!canalSoirees && get().soireesDisponibles) {
+      canalSoirees = ecouter("soirees-live", "soirees", rechargerSoiree, () => {
+        canalSoirees = null;
+      });
+    }
+
     if (!canalPaiements && get().paiementsDisponibles) {
       canalPaiements = ecouter(
         "paiements-live",
@@ -420,6 +508,23 @@ export const useCommandeStore = create<Store>()((set, get) => {
 
   return {
     connexionOk: true,
+
+    soiree: null,
+    soireesDisponibles: false,
+
+    demarrerSoiree: async (soiree) => {
+      const { error } = await supabase.from("soirees").upsert({
+        id: soiree.id,
+        nom: soiree.nom,
+        demarree_le: new Date().toISOString(),
+      });
+
+      if (error) return false;
+
+      await get().reinitialiserTables();
+      await rechargerSoiree();
+      return true;
+    },
     ruptures: [],
     // Confirmé à la première lecture (évite de s'abonner à une table absente).
     rupturesDisponibles: false,
@@ -496,6 +601,8 @@ export const useCommandeStore = create<Store>()((set, get) => {
     },
 
     synchroniser: async () => {
+      await assurerSoiree();
+      await rechargerSoiree();
       await Promise.all([
         rechargerTables(),
         rechargerCommandesEnCours(),
@@ -512,6 +619,7 @@ export const useCommandeStore = create<Store>()((set, get) => {
           serveur,
           statut: "envoyée",
           items,
+          ...champSoiree(),
         }),
         get().setStatutTable(table, "commande"),
       ]);
@@ -543,7 +651,7 @@ export const useCommandeStore = create<Store>()((set, get) => {
 
       const { error } = await supabase
         .from("paiements")
-        .insert({ table_name: table, montant, mode, serveur });
+        .insert({ table_name: table, montant, mode, serveur, ...champSoiree() });
 
       await rechargerPaiements();
       return !error;
@@ -621,16 +729,20 @@ export const useCommandeStore = create<Store>()((set, get) => {
         ),
         // Toutes les commandes (en cours et historique) suivent le client,
         // pour que son total reste sur sa nouvelle table.
-        supabase
-          .from("commandes")
-          .update({ table_name: destination })
-          .eq("table_name", source),
+        parSoiree(
+          supabase
+            .from("commandes")
+            .update({ table_name: destination })
+            .eq("table_name", source)
+        ),
         // Les paiements déjà faits suivent aussi, pour garder le bon reste à payer.
         get().paiementsDisponibles
-          ? supabase
-              .from("paiements")
-              .update({ table_name: destination })
-              .eq("table_name", source)
+          ? parSoiree(
+              supabase
+                .from("paiements")
+                .update({ table_name: destination })
+                .eq("table_name", source)
+            )
           : Promise.resolve({ error: null }),
       ]);
 
@@ -704,14 +816,15 @@ export const useCommandeStore = create<Store>()((set, get) => {
       if (error) await rechargerToutesCommandes();
     },
 
-    // Fin de soirée : efface les commandes terminées et tous les paiements.
+    // Fin de soirée : efface les commandes terminées et tous les paiements
+    // de la soirée en cours.
     viderHistorique: async () => {
       set({ historique: [], paiements: [] });
 
       const [{ error }, resultatPaiements] = await Promise.all([
-        supabase.from("commandes").delete().eq("statut", "terminée"),
+        parSoiree(supabase.from("commandes").delete().eq("statut", "terminée")),
         get().paiementsDisponibles
-          ? supabase.from("paiements").delete().gte("id", 0)
+          ? parSoiree(supabase.from("paiements").delete().gte("id", 0))
           : Promise.resolve({ error: null }),
       ]);
 

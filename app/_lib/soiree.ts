@@ -2,11 +2,12 @@
 
 import { useSyncExternalStore } from "react";
 
-// Soirée en cours, ouverte depuis un événement du site PILOT
-// (bouton « Caisse bar » → /serveur?soiree=<id>&nom=<nom>).
-export type Soiree = { id: string; nom: string };
+import type { Soiree } from "./store";
 
-const CLE = "soiree";
+// Soirée demandée depuis un événement du site PILOT (bouton « Caisse bar »
+// → /serveur?soiree=<id>&nom=<nom>), en attente de confirmation sur cet appareil.
+// La soirée en cours, elle, est dans Supabase (store : soiree).
+const CLE = "soiree-demandee";
 const abonnes = new Set<() => void>();
 
 const lireBrut = () => {
@@ -38,7 +39,14 @@ export const memoriserSoireeDepuisAdresse = () => {
   abonnes.forEach((f) => f());
 };
 
-export const useSoiree = (): Soiree | null => {
+export const oublierSoireeDemandee = () => {
+  try {
+    localStorage.removeItem(CLE);
+  } catch {}
+  abonnes.forEach((f) => f());
+};
+
+export const useSoireeDemandee = (): Soiree | null => {
   const brut = useSyncExternalStore(abonner, lireBrut, () => null);
   if (!brut) return null;
   try {

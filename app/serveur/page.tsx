@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import { MOT_DE_PASSE_APP, MOT_DE_PASSE_BAR } from "../_lib/config";
 import {
@@ -10,7 +10,8 @@ import {
   type Role,
 } from "../_lib/session";
 import { boutons, effetBouton } from "../_lib/styles";
-import { memoriserSoireeDepuisAdresse, useSoiree } from "../_lib/soiree";
+import { useCommandeStore } from "../_lib/store";
+import ChoixSoiree from "../_components/ChoixSoiree";
 
 const champ =
   "h-[54px] w-full rounded-[14px] border border-ligne bg-carte px-4 text-[17px] text-texte outline-none focus:border-doux";
@@ -27,12 +28,7 @@ export default function ConnexionPage() {
   const [nom, setNom] = useState("");
   const [motDePasse, setMotDePasse] = useState("");
   const [erreur, setErreur] = useState("");
-  const soiree = useSoiree();
-
-  // Ouverte depuis un événement PILOT : on retient la soirée.
-  useEffect(() => {
-    memoriserSoireeDepuisAdresse();
-  }, []);
+  const soiree = useCommandeStore((state) => state.soiree);
 
   const changerProfil = (nouveau: Role) => {
     setRole(nouveau);
@@ -92,6 +88,8 @@ export default function ConnexionPage() {
             )}
           </div>
         </div>
+
+        <ChoixSoiree />
 
         <form onSubmit={seConnecter} className="flex flex-col gap-4">
           <div role="radiogroup" aria-label="Profil" className="grid grid-cols-2 gap-2">
