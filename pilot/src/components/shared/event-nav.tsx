@@ -13,6 +13,7 @@ export function EventNav({ eventId }: { eventId: string }) {
     { href: `${base}/revenues`, label: "Recettes" },
     { href: `${base}/forecast`, label: "Prévisionnel vs Réel" },
     { href: `${base}/tasks`, label: "Tâches" },
+    { href: `${base}/stocks`, label: "Stocks" },
   ];
 
   return (
