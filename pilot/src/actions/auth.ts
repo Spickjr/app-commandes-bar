@@ -30,20 +30,26 @@ export async function signupAction(_prev: FormState, formData: FormData): Promis
   }
 
   const email = parsed.data.email.toLowerCase().trim();
-  const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) {
-    return { error: "Un compte existe déjà avec cet email." };
-  }
 
-  const passwordHash = await bcrypt.hash(parsed.data.password, 10);
-  await prisma.user.create({
-    data: {
-      email,
-      passwordHash,
-      firstName: parsed.data.firstName,
-      lastName: parsed.data.lastName,
-    },
-  });
+  try {
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      return { error: "Un compte existe déjà avec cet email." };
+    }
+
+    const passwordHash = await bcrypt.hash(parsed.data.password, 10);
+    await prisma.user.create({
+      data: {
+        email,
+        passwordHash,
+        firstName: parsed.data.firstName,
+        lastName: parsed.data.lastName,
+      },
+    });
+  } catch (error) {
+    console.error("Inscription impossible :", error);
+    return { error: "Base de données injoignable. Réessaie dans un instant." };
+  }
 
   await signIn("credentials", { email, password: parsed.data.password, redirect: false });
   redirect("/onboarding");
