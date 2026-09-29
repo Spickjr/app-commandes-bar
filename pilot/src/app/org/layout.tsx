@@ -4,8 +4,7 @@ import { AppShell } from "@/components/shared/app-shell";
 import type { OrgRole } from "@/lib/constants";
 
 export default async function OrgLayout({ children }: { children: React.ReactNode }) {
-  const user = await requireUser();
-  const ctx = await requireOrgContext();
+  const [user, ctx] = await Promise.all([requireUser(), requireOrgContext()]);
   const org = await prisma.organization.findUniqueOrThrow({ where: { id: ctx.organizationId } });
 
   return (

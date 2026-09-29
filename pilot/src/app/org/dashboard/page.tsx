@@ -43,17 +43,18 @@ export default async function DashboardPage() {
 
   const pendingQuotes = allExpenses.filter((e) => e.status === "DEVIS_DEMANDE" || e.status === "DEVIS_RECU").length;
 
-  const overdueTasks = await prisma.task.count({
-    where: {
-      organizationId: ctx.organizationId,
-      status: { notIn: ["TERMINE"] },
-      dueDate: { lt: now },
-    },
-  });
-
-  const missingDocs = await prisma.documentRequirement.count({
-    where: { fulfilled: false, event: { organizationId: ctx.organizationId } },
-  });
+  const [overdueTasks, missingDocs] = await Promise.all([
+    prisma.task.count({
+      where: {
+        organizationId: ctx.organizationId,
+        status: { notIn: ["TERMINE"] },
+        dueDate: { lt: now },
+      },
+    }),
+    prisma.documentRequirement.count({
+      where: { fulfilled: false, event: { organizationId: ctx.organizationId } },
+    }),
+  ]);
 
   const categoryTotals = new Map<string, number>();
   for (const e of allExpenses) {
