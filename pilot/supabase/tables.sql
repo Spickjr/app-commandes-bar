@@ -470,6 +470,32 @@ ALTER TABLE "AuditLog" ADD CONSTRAINT "AuditLog_organizationId_fkey" FOREIGN KEY
 -- AddForeignKey
 ALTER TABLE "AuditLog" ADD CONSTRAINT "AuditLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
+-- CreateTable
+CREATE TABLE "StockItem" (
+    "id" TEXT NOT NULL,
+    "eventId" TEXT NOT NULL,
+    "organizationId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "unit" TEXT,
+    "initialQty" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "usedQty" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "alertQty" DOUBLE PRECISION,
+    "notes" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "StockItem_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE INDEX "StockItem_eventId_idx" ON "StockItem"("eventId");
+
+-- CreateIndex
+CREATE INDEX "StockItem_organizationId_idx" ON "StockItem"("organizationId");
+
+-- AddForeignKey
+ALTER TABLE "StockItem" ADD CONSTRAINT "StockItem_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES "Event"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
 -- Protection : rien n'est accessible avec les clés publiques Supabase.
 revoke all on schema pilot from anon, authenticated;
 alter table pilot."User" enable row level security;
@@ -490,3 +516,4 @@ alter table pilot."Category" enable row level security;
 alter table pilot."EventReport" enable row level security;
 alter table pilot."Notification" enable row level security;
 alter table pilot."AuditLog" enable row level security;
+alter table pilot."StockItem" enable row level security;

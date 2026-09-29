@@ -105,6 +105,7 @@ model Event {
   tasks         Task[]
   report        EventReport?
   documentRequirements DocumentRequirement[]
+  stockItems    StockItem[]
 
   @@index([organizationId, date])
   @@index([organizationId, status])
@@ -402,4 +403,27 @@ model AuditLog {
   user         User?        @relation(fields: [userId], references: [id])
 
   @@index([organizationId, entityType])
+}
+
+// ---------------------------------------------------------------------------
+// STOCKS (par événement, saisis à la main)
+// ---------------------------------------------------------------------------
+
+model StockItem {
+  id             String   @id @default(uuid())
+  eventId        String
+  organizationId String
+  name           String
+  unit           String? // bouteilles, fûts, cartons, sacs…
+  initialQty     Float    @default(0) // quantité de départ
+  usedQty        Float    @default(0) // quantité utilisée / consommée
+  alertQty       Float? // seuil d'alerte sur le restant
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@index([organizationId])
 }
