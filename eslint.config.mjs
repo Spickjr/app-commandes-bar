@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Site PILOT : projet séparé (son propre package.json et sa config).
+    "pilot/**",
   ]),
 ]);
 

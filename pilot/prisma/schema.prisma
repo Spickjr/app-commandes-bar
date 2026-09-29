@@ -1,0 +1,405 @@
+// Schéma PILOT — conçu pour SQLite en développement et portable vers PostgreSQL/Supabase
+// sans changement de modèle (types compatibles, pas de fonctionnalité SQLite-only).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// IDENTITÉ & ORGANISATION
+// ---------------------------------------------------------------------------
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  passwordHash  String
+  firstName     String
+  lastName      String
+  avatarUrl     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  memberships     OrganizationMember[]
+  tasksOwned      Task[]               @relation("TaskAssignee")
+  auditLogs       AuditLog[]
+  notifications   Notification[]
+}
+
+model Organization {
+  id              String   @id @default(uuid())
+  name            String
+  type            String // Association, Collectivité, Agence événementielle, Festival, Entreprise, Club, Bar / Restaurant, Lieu événementiel, Producteur, Collectif, Organisateur indépendant, Autre
+  logoUrl         String?
+  address         String?
+  legalInfo       String? // SIRET, infos administratives libres
+  currency        String   @default("EUR")
+  vatMode         String   @default("HT") // "HT" ou "TTC" — mode de travail principal
+  eventsPerYear   Int? // renseigné à l'onboarding, indicatif
+  plan            String   @default("FREE") // FREE, STARTER, PRO, BUSINESS — préparation business model
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  members       OrganizationMember[]
+  events        Event[]
+  suppliers     Supplier[]
+  contributors  Contributor[]
+  categories    Category[]
+  documents     Document[]
+  tasks         Task[]
+  notifications Notification[]
+  auditLogs     AuditLog[]
+
+  @@index([name])
+}
+
+model OrganizationMember {
+  id             String   @id @default(uuid())
+  organizationId String
+  userId         String
+  role           String // Owner, Admin, Manager, Member, Viewer
+  invitedEmail   String? // pour invitations en attente (userId peut être vide via user placeholder si besoin futur)
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// ÉVÉNEMENTS
+// ---------------------------------------------------------------------------
+
+model Event {
+  id             String    @id @default(uuid())
+  organizationId String
+  name           String
+  type           String // Culturel, Festival, Concert, Soirée, Sportif, Associatif, Institutionnel, Corporate, Salon, Conférence, Séminaire, Marché, Privé, Autre
+  status         String    @default("BROUILLON") // BROUILLON, EN_PREPARATION, CONFIRME, EN_COURS, TERMINE, ANNULE
+  date           DateTime
+  startTime      String? // "20:00"
+  endTime        String?
+  venueName      String?
+  address        String?
+  estimatedCapacity Int?
+  actualAttendance  Int? // renseigné au bilan, sert au coût/recette par participant
+  description    String?
+  ownerUserId    String? // responsable
+  initialBudget  Float?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  expenses      Expense[]
+  revenues      Revenue[]
+  eventSuppliers   EventSupplier[]
+  eventContributors EventContributor[]
+  documents     Document[]
+  tasks         Task[]
+  report        EventReport?
+  documentRequirements DocumentRequirement[]
+
+  @@index([organizationId, date])
+  @@index([organizationId, status])
+}
+
+// ---------------------------------------------------------------------------
+// FINANCES
+// ---------------------------------------------------------------------------
+
+model Expense {
+  id              String   @id @default(uuid())
+  eventId         String
+  organizationId  String
+  label           String
+  categoryId      String?
+  supplierId      String?
+  forecastAmountHt Float   @default(0)
+  forecastAmountTtc Float  @default(0)
+  actualAmountHt   Float?
+  actualAmountTtc  Float?
+  vatRate          Float   @default(20)
+  depositAmount    Float?  // acompte
+  dueDate          DateTime?
+  status           String  @default("ESTIMATION") // ESTIMATION, DEVIS_DEMANDE, DEVIS_RECU, VALIDE, ACOMPTE_PAYE, PARTIELLEMENT_PAYE, PAYE, ANNULE
+  notes            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  event      Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  category   Category?    @relation(fields: [categoryId], references: [id])
+  supplier   Supplier?    @relation(fields: [supplierId], references: [id])
+  documents  Document[]
+  payments   Payment[]
+
+  @@index([eventId])
+  @@index([organizationId])
+  @@index([supplierId])
+  @@index([categoryId])
+}
+
+model Revenue {
+  id               String   @id @default(uuid())
+  eventId          String
+  organizationId   String
+  label            String
+  categoryId       String?
+  forecastAmount   Float    @default(0)
+  actualAmount     Float?
+  collectedAmount  Float?   // encaissé (agrégé, complété par Payment de type ENCAISSEMENT si besoin de détail)
+  expectedDate     DateTime?
+  status           String   @default("PREVU") // PREVU, CONFIRME, PARTIELLEMENT_ENCAISSE, ENCAISSE, ANNULE
+  notes            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  event     Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  category  Category?  @relation(fields: [categoryId], references: [id])
+  documents Document[]
+  payments  Payment[]
+
+  @@index([eventId])
+  @@index([organizationId])
+  @@index([categoryId])
+}
+
+// Paiements/encaissements unitaires — permet le détail "reste à payer" / "reste à encaisser"
+model Payment {
+  id         String   @id @default(uuid())
+  expenseId  String?
+  revenueId  String?
+  amount     Float
+  date       DateTime @default(now())
+  method     String? // Virement, Chèque, Espèces, CB, Autre
+  note       String?
+  createdAt  DateTime @default(now())
+
+  expense Expense? @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  revenue Revenue? @relation(fields: [revenueId], references: [id], onDelete: Cascade)
+
+  @@index([expenseId])
+  @@index([revenueId])
+}
+
+// ---------------------------------------------------------------------------
+// PRESTATAIRES & INTERVENANTS
+// ---------------------------------------------------------------------------
+
+model Supplier {
+  id             String   @id @default(uuid())
+  organizationId String
+  name           String
+  categoryId     String?
+  contactName    String?
+  phone          String?
+  email          String?
+  address        String?
+  companyNumber  String?
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  category     Category?       @relation(fields: [categoryId], references: [id])
+  expenses     Expense[]
+  eventLinks   EventSupplier[]
+  documents    Document[]
+
+  @@index([organizationId])
+}
+
+// Association explicite prestataire <-> événement (au-delà des dépenses), pour lister
+// "tous les prestataires d'un événement" même sans dépense encore saisie.
+model EventSupplier {
+  id         String @id @default(uuid())
+  eventId    String
+  supplierId String
+  role       String? // ex: "Sécurité", "Son & lumière"
+
+  event    Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, supplierId])
+}
+
+model Contributor {
+  id             String   @id @default(uuid())
+  organizationId String
+  name           String
+  type           String // artiste, DJ, musicien, conférencier, animateur, speaker, performer, sportif, formateur, personnalité, autre
+  email          String?
+  phone          String?
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  eventLinks   EventContributor[]
+
+  @@index([organizationId])
+}
+
+model EventContributor {
+  id             String    @id @default(uuid())
+  eventId        String
+  contributorId  String
+  cost           Float?
+  callTime       String?
+  stageTime      String?
+  logisticsNotes String?
+  notes          String?
+
+  event       Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  contributor Contributor @relation(fields: [contributorId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, contributorId])
+}
+
+// ---------------------------------------------------------------------------
+// DOCUMENTS
+// ---------------------------------------------------------------------------
+
+model Document {
+  id             String   @id @default(uuid())
+  organizationId String
+  eventId        String?
+  supplierId     String?
+  expenseId      String?
+  revenueId      String?
+  contributorId  String?
+  name           String
+  type           String // Devis, Facture, Contrat, Convention, Assurance, Autorisation, Plan, Licence, Bon de commande, Justificatif, Autre
+  fileUrl        String
+  fileSize       Int?
+  mimeType       String?
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  event        Event?       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  supplier     Supplier?    @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  expense      Expense?     @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  revenue      Revenue?     @relation(fields: [revenueId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([eventId])
+}
+
+// Checklist documentaire — "3 documents manquants"
+model DocumentRequirement {
+  id        String   @id @default(uuid())
+  eventId   String
+  label     String
+  fulfilled Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+}
+
+// ---------------------------------------------------------------------------
+// TÂCHES
+// ---------------------------------------------------------------------------
+
+model Task {
+  id             String    @id @default(uuid())
+  organizationId String
+  eventId        String?
+  title          String
+  description    String?
+  assigneeId     String?
+  priority       String    @default("NORMALE") // FAIBLE, NORMALE, HAUTE, URGENTE
+  status         String    @default("A_FAIRE") // A_FAIRE, EN_COURS, TERMINE, BLOQUE
+  dueDate        DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  event        Event?       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  assignee     User?        @relation("TaskAssignee", fields: [assigneeId], references: [id])
+
+  @@index([organizationId, status])
+  @@index([eventId])
+}
+
+// ---------------------------------------------------------------------------
+// CATÉGORIES (personnalisables par organisation)
+// ---------------------------------------------------------------------------
+
+model Category {
+  id             String   @id @default(uuid())
+  organizationId String
+  scope          String // EXPENSE, REVENUE, SUPPLIER, EVENT, DOCUMENT
+  name           String
+  isDefault      Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  expenses     Expense[]
+  revenues     Revenue[]
+  suppliers    Supplier[]
+
+  @@unique([organizationId, scope, name])
+  @@index([organizationId, scope])
+}
+
+// ---------------------------------------------------------------------------
+// BILAN D'ÉVÉNEMENT
+// ---------------------------------------------------------------------------
+
+model EventReport {
+  id            String   @id @default(uuid())
+  eventId       String   @unique
+  positives     String?
+  issues        String?
+  improvements  String?
+  internalNotes String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+// ---------------------------------------------------------------------------
+// NOTIFICATIONS & AUDIT
+// ---------------------------------------------------------------------------
+
+model Notification {
+  id             String    @id @default(uuid())
+  organizationId String
+  userId         String?
+  type           String // FACTURE_A_PAYER, EVENEMENT_PROCHE, TACHE_EN_RETARD, DOCUMENT_MANQUANT, ENCAISSEMENT_ATTENDU
+  message        String
+  link           String?
+  read           Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, read])
+  @@index([userId, read])
+}
+
+model AuditLog {
+  id             String   @id @default(uuid())
+  organizationId String
+  userId         String?
+  action         String // CREATE, UPDATE, DELETE
+  entityType     String
+  entityId       String
+  metadata       String? // JSON stringifié
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User?        @relation(fields: [userId], references: [id])
+
+  @@index([organizationId, entityType])
+}
