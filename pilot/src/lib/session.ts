@@ -1,6 +1,7 @@
 import { auth } from "./auth";
 import { prisma } from "./prisma";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { cache } from "react";
 import { ADMIN_ROLES, WRITE_ROLES, type OrgRole } from "./constants";
 
@@ -25,15 +26,26 @@ export interface OrgContext {
   role: OrgRole;
 }
 
+/** Cookie mémorisant l'organisation active quand l'utilisateur appartient à plusieurs. */
+export const ACTIVE_ORG_COOKIE = "pilot-org";
+
 /** Renvoie le contexte organisation courant de l'utilisateur, ou null s'il n'en a pas encore. */
 export const getCurrentOrgContext = cache(async (): Promise<OrgContext | null> => {
   const user = await getCurrentUser();
   if (!user) return null;
 
-  const membership = await prisma.organizationMember.findFirst({
-    where: { userId: user.id },
-    orderBy: { createdAt: "asc" },
-  });
+  // L'organisation choisie n'est retenue que si l'utilisateur en est bien membre.
+  const activeOrgId = (await cookies()).get(ACTIVE_ORG_COOKIE)?.value;
+  const membership =
+    (activeOrgId
+      ? await prisma.organizationMember.findUnique({
+          where: { organizationId_userId: { organizationId: activeOrgId, userId: user.id } },
+        })
+      : null) ??
+    (await prisma.organizationMember.findFirst({
+      where: { userId: user.id },
+      orderBy: { createdAt: "asc" },
+    }));
   if (!membership) return null;
 
   return {
@@ -42,6 +54,17 @@ export const getCurrentOrgContext = cache(async (): Promise<OrgContext | null> =
     role: membership.role as OrgRole,
   };
 });
+
+/** Rend l'organisation active (à appeler depuis une Server Action). */
+export async function setActiveOrganization(organizationId: string) {
+  (await cookies()).set(ACTIVE_ORG_COOKIE, organizationId, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 365,
+  });
+}
 
 /** À utiliser en tête de chaque page/action serveur protégée. Redirige si non authentifié. */
 export async function requireUser() {

@@ -11,11 +11,12 @@ import { ORGANIZATION_TYPES } from "@/lib/constants";
 
 const initialState: FormState = {};
 
-export function OnboardingForm() {
+export function OnboardingForm({ additional = false }: { additional?: boolean }) {
   const [state, formAction, pending] = useActionState(completeOnboardingAction, initialState);
 
   return (
     <form action={formAction} className="flex flex-col gap-4 rounded-lg border border-border bg-card p-6">
+      {additional && <input type="hidden" name="additional" value="1" />}
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="organizationName">Nom de la structure</Label>
         <Input id="organizationName" name="organizationName" required placeholder="ex. Hors Cadre Production" />

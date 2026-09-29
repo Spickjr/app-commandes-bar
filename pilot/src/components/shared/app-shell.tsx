@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
 import { SignOutButton } from "./sign-out-button";
+import { OrgSwitcher } from "./org-switcher";
 import { ORG_ROLE_LABELS, type OrgRole } from "@/lib/constants";
 
 const NAV = [
@@ -24,11 +25,15 @@ const NAV = [
 export function AppShell({
   children,
   orgName,
+  orgId,
+  organizations,
   role,
   userName,
 }: {
   children: React.ReactNode;
   orgName: string;
+  orgId: string;
+  organizations: { id: string; name: string }[];
   role: OrgRole;
   userName: string;
 }) {
@@ -54,6 +59,9 @@ export function AppShell({
         <div className="mt-4 border-t border-border pt-3 px-2">
           <p className="truncate text-sm font-medium">{orgName}</p>
           <p className="text-xs text-muted-foreground">{userName} · {ORG_ROLE_LABELS[role]}</p>
+          <div className="mt-3">
+            <OrgSwitcher organizations={organizations} currentId={orgId} />
+          </div>
         </div>
       </aside>
       <div className="flex min-h-screen flex-1 flex-col">

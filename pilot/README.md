@@ -51,7 +51,16 @@ src/components/shared/*      Composants métier réutilisables (StatCard, badges
 
 ## Ce qui est livré (MVP1)
 
-Authentification, organisation, onboarding, création d'événement, dashboard global, dashboard événement, dépenses, recettes, calculs financiers automatiques, prévisionnel vs réel, prestataires (avec historique), tâches, échéances. CRUD réel partout — rien de décoratif ; les points non encore implémentés (invitations de membres, modification du profil) sont explicitement marqués "Bientôt disponible" plutôt que simulés.
+Authentification, organisation, onboarding, création d'événement, dashboard global, dashboard événement, dépenses, recettes, calculs financiers automatiques, prévisionnel vs réel, prestataires (avec historique), tâches, échéances. CRUD réel partout — rien de décoratif ; les points non encore implémentés (modification du profil) sont explicitement marqués "Bientôt disponible" plutôt que simulés.
+
+## Équipe (membres, invitations, rôles)
+
+Paramètres → Membres : un propriétaire ou un admin invite une personne par email avec un rôle. PILOT génère un lien
+`/invite/<token>` (valable 7 jours, à partager soi-même — aucun email n'est envoyé) ; la personne se connecte ou crée
+son compte avec l'adresse invitée, puis accepte. Les admins changent les rôles et retirent des membres ; seul un
+propriétaire peut nommer ou retirer un propriétaire, et l'organisation garde toujours au moins un propriétaire.
+Un utilisateur peut appartenir à plusieurs organisations et passer de l'une à l'autre depuis la barre latérale.
+En ligne : exécuter une fois `supabase/invitations.sql` dans Supabase → SQL Editor.
 
 ## Prochaines étapes (MVP2/MVP3, cf. cahier des charges §45)
 
