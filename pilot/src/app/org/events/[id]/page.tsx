@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { StatCard } from "@/components/shared/stat-card";
 import { EventNav } from "@/components/shared/event-nav";
 import { EventStatusSelect } from "@/components/shared/event-status-select";
+import { CaisseBarButton } from "@/components/shared/caisse-bar-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CategoryBreakdownChart } from "@/components/charts/category-breakdown-chart";
 import { formatMoney, formatMoneySigned, formatDate, daysUntil } from "@/lib/utils";
@@ -53,7 +54,12 @@ export default async function EventDashboardPage({ params }: { params: Promise<{
       <PageHeader
         title={event.name}
         description={`${event.type} · ${formatDate(event.date)}${event.venueName ? " · " + event.venueName : ""}`}
-        action={<EventStatusSelect eventId={event.id} status={event.status} />}
+        action={
+          <div className="flex items-center gap-2">
+            <CaisseBarButton event={event} />
+            <EventStatusSelect eventId={event.id} status={event.status} />
+          </div>
+        }
       />
       <EventNav eventId={event.id} />
 

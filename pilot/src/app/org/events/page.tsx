@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { formatDate, formatMoney } from "@/lib/utils";
 import { computeFinanceSummary } from "@/lib/finance";
 import { Plus, CalendarDays } from "lucide-react";
+import { CaisseBarButton } from "@/components/shared/caisse-bar-button";
 
 export default async function EventsPage() {
   const ctx = await requireOrgContext();
@@ -56,6 +57,7 @@ export default async function EventsPage() {
               <TableHead>Statut</TableHead>
               <TableHead className="text-right">Budget prévisionnel</TableHead>
               <TableHead className="text-right">Résultat réel</TableHead>
+              <TableHead className="text-right">Soirée</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -76,6 +78,9 @@ export default async function EventsPage() {
                   <TableCell className="text-right tabular-nums">{formatMoney(summary.expensesForecast)}</TableCell>
                   <TableCell className={`text-right tabular-nums ${summary.resultActual >= 0 ? "text-success" : "text-destructive"}`}>
                     {formatMoney(summary.resultActual)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <CaisseBarButton event={e} size="sm" />
                   </TableCell>
                 </TableRow>
               );

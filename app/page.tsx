@@ -11,9 +11,11 @@ import { attentePreteMs, estPreteEnRetard, useMaintenant } from "./_lib/temps";
 import CaseTable from "./_components/CaseTable";
 import EnTete from "./_components/EnTete";
 import MenuServeur from "./_components/MenuServeur";
+import { useSoiree } from "./_lib/soiree";
 import NavBas from "./_components/NavBas";
 
 export default function Home() {
+  const soiree = useSoiree();
   const router = useRouter();
   const serveur = useServeur();
 
@@ -62,7 +64,7 @@ export default function Home() {
   return (
     <main className="mx-auto w-full max-w-6xl px-5 pb-28">
       <EnTete
-        surtitre="Of Course !"
+        surtitre={soiree?.nom || "Of Course !"}
         titre="Tables"
         aDroite={<MenuServeur serveur={serveur} onDeconnexion={deconnexion} />}
       />

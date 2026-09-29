@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { MOT_DE_PASSE_APP, MOT_DE_PASSE_BAR } from "../_lib/config";
 import {
@@ -10,6 +10,7 @@ import {
   type Role,
 } from "../_lib/session";
 import { boutons, effetBouton } from "../_lib/styles";
+import { memoriserSoireeDepuisAdresse, useSoiree } from "../_lib/soiree";
 
 const champ =
   "h-[54px] w-full rounded-[14px] border border-ligne bg-carte px-4 text-[17px] text-texte outline-none focus:border-doux";
@@ -26,6 +27,12 @@ export default function ConnexionPage() {
   const [nom, setNom] = useState("");
   const [motDePasse, setMotDePasse] = useState("");
   const [erreur, setErreur] = useState("");
+  const soiree = useSoiree();
+
+  // Ouverte depuis un événement PILOT : on retient la soirée.
+  useEffect(() => {
+    memoriserSoireeDepuisAdresse();
+  }, []);
 
   const changerProfil = (nouveau: Role) => {
     setRole(nouveau);
@@ -78,6 +85,11 @@ export default function ConnexionPage() {
               Bonsoir
             </h1>
             <p className="text-[15px] text-doux">Qui se connecte ?</p>
+            {soiree?.nom && (
+              <span className="mt-1 rounded-full bg-carte px-3 py-1 text-[13px] font-semibold text-clair">
+                Soirée · {soiree.nom}
+              </span>
+            )}
           </div>
         </div>
 
