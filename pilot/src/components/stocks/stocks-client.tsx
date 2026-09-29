@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
-import { Minus, Package, Plus } from "lucide-react";
+import { Package, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -68,7 +68,7 @@ export function StocksClient({ eventId, items, canWrite }: { eventId: string; it
         <EmptyState
           icon={Package}
           title="Aucun article en stock"
-          description="Ajoutez ce que vous prévoyez pour l'événement (boissons, gobelets, glaçons, matériel…) et suivez ce qui est utilisé."
+          description="Ajoutez ce que vous prévoyez pour l'événement (boissons, gobelets, glaçons, matériel…). En fin de soirée, notez ce qu'il reste : ce qui a été passé se calcule tout seul."
         />
       ) : (
         <Table>
@@ -76,8 +76,8 @@ export function StocksClient({ eventId, items, canWrite }: { eventId: string; it
             <TableRow>
               <TableHead>Article</TableHead>
               <TableHead className="text-right">Départ</TableHead>
-              <TableHead className="text-center">Utilisé</TableHead>
-              <TableHead className="text-right">Restant</TableHead>
+              <TableHead className="text-right">Reste (fin de soirée)</TableHead>
+              <TableHead className="text-right">Passé</TableHead>
               {canWrite && <TableHead className="w-0" />}
             </TableRow>
           </TableHeader>
@@ -96,6 +96,15 @@ function StockLine({ item, canWrite }: { item: StockRow; canWrite: boolean }) {
   const [pending, startTransition] = useTransition();
   const restant = restantDe(item);
   const alerte = enAlerte(item);
+
+  // On note ce qu'il reste : le « passé » est calculé (départ − reste).
+  const enregistrerReste = (reste: number) => {
+    if (reste > item.initialQty) {
+      toast.error("Le reste dépasse la quantité de départ : corrige d'abord le départ.");
+      return;
+    }
+    enregistrer("usedQty", Math.round((item.initialQty - reste) * 100) / 100);
+  };
 
   const enregistrer = (field: "initialQty" | "usedQty", value: number) => {
     startTransition(async () => {
@@ -130,44 +139,24 @@ function StockLine({ item, canWrite }: { item: StockRow; canWrite: boolean }) {
           <span className="tabular-nums">{nombre(item.initialQty)}</span>
         )}
       </TableCell>
-      <TableCell>
+      <TableCell className="text-right">
         {canWrite ? (
-          <div className="flex items-center justify-center gap-1">
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="h-8 w-8"
-              aria-label="Un de moins"
-              disabled={pending || item.usedQty <= 0}
-              onClick={() => enregistrer("usedQty", Math.max(0, item.usedQty - 1))}
-            >
-              <Minus className="h-3.5 w-3.5" />
-            </Button>
+          <div className="flex items-center justify-end gap-1.5">
             <QuantiteInput
-              key={`utilise-${item.usedQty}`}
-              valeur={item.usedQty}
-              label={`Quantité utilisée : ${item.name}`}
-              onValider={(v) => enregistrer("usedQty", v)}
+              key={`reste-${restant}`}
+              valeur={restant}
+              label={`Quantité restante : ${item.name}`}
+              onValider={enregistrerReste}
+              className={cn(alerte && "border-destructive text-destructive")}
             />
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="h-8 w-8"
-              aria-label="Un de plus"
-              disabled={pending}
-              onClick={() => enregistrer("usedQty", item.usedQty + 1)}
-            >
-              <Plus className="h-3.5 w-3.5" />
-            </Button>
+            {item.unit && <span className="w-14 truncate text-left text-xs text-muted-foreground">{item.unit}</span>}
           </div>
         ) : (
-          <span className="block text-center tabular-nums">{nombre(item.usedQty)}</span>
+          <span className={cn("tabular-nums", alerte && "text-destructive")}>{nombre(restant)}</span>
         )}
       </TableCell>
-      <TableCell className={cn("text-right font-semibold tabular-nums", alerte ? "text-destructive" : "text-success")}>
-        {nombre(restant)}
+      <TableCell className="text-right text-base font-semibold tabular-nums">
+        {nombre(item.usedQty)}
         {item.unit && <span className="ml-1 text-xs font-normal text-muted-foreground">{item.unit}</span>}
       </TableCell>
       {canWrite && (
