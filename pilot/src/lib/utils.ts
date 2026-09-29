@@ -69,3 +69,10 @@ export function slugify(value: string): string {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
 }
+
+/** Chemin de retour après connexion : uniquement un chemin interne (jamais « //autre-site »). */
+export function safeNextPath(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  if (!value.startsWith("/") || value.startsWith("//") || value.startsWith("/\\")) return undefined;
+  return value;
+}

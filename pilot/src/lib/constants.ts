@@ -11,6 +11,17 @@ export const ORG_ROLE_LABELS: Record<OrgRole, string> = {
   VIEWER: "Lecteur",
 };
 
+export const ORG_ROLE_DESCRIPTIONS: Record<OrgRole, string> = {
+  OWNER: "Tous les droits, y compris gérer les propriétaires",
+  ADMIN: "Gère les membres, les paramètres et les événements",
+  MANAGER: "Crée et modifie événements, dépenses, recettes, tâches",
+  MEMBER: "Crée et modifie événements, dépenses, recettes, tâches",
+  VIEWER: "Consulte tout, sans rien modifier",
+};
+
+// Durée de validité d'un lien d'invitation.
+export const INVITATION_TTL_DAYS = 7;
+
 // Rôles pouvant écrire (créer/modifier/supprimer) — VIEWER est lecture seule.
 export const WRITE_ROLES: OrgRole[] = ["OWNER", "ADMIN", "MANAGER", "MEMBER"];
 // Rôles pouvant gérer l'organisation (membres, paramètres, suppression d'événements).

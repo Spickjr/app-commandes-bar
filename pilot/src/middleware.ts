@@ -4,7 +4,7 @@ import type { NextRequest } from "next/server";
 // La vérification fine (session + appartenance organisation) est faite côté serveur
 // dans chaque page via requireOrgContext() — ce middleware ne fait qu'une redirection
 // rapide basée sur le cookie de session pour éviter un flash de contenu protégé.
-const PUBLIC_PATHS = ["/", "/login", "/signup", "/api/auth"];
+const PUBLIC_PATHS = ["/", "/login", "/signup", "/invite", "/api/auth"];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

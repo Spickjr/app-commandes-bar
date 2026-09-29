@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { signIn, signOut } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { safeNextPath } from "@/lib/utils";
 
 const signupSchema = z.object({
   firstName: z.string().min(1, "Prénom requis"),
@@ -52,7 +53,7 @@ export async function signupAction(_prev: FormState, formData: FormData): Promis
   }
 
   await signIn("credentials", { email, password: parsed.data.password, redirect: false });
-  redirect("/onboarding");
+  redirect(safeNextPath(formData.get("next")) ?? "/onboarding");
 }
 
 export async function loginAction(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -69,7 +70,7 @@ export async function loginAction(_prev: FormState, formData: FormData): Promise
     return { error: "Email ou mot de passe incorrect." };
   }
 
-  redirect("/org/dashboard");
+  redirect(safeNextPath(formData.get("next")) ?? "/org/dashboard");
 }
 
 export async function signOutAction() {

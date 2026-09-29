@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { requireUser, setActiveOrganization } from "@/lib/session";
 import { DEFAULT_EXPENSE_CATEGORIES, DEFAULT_REVENUE_CATEGORIES } from "@/lib/constants";
 import type { FormState } from "./auth";
 
@@ -26,8 +26,10 @@ export async function completeOnboardingAction(_prev: FormState, formData: FormD
     return { error: parsed.error.issues[0]?.message ?? "Données invalides" };
   }
 
+  // Un utilisateur déjà membre d'une organisation peut en créer une autre, mais seulement
+  // de façon explicite (« Créer une autre organisation ») — évite un doublon au double envoi.
   const existing = await prisma.organizationMember.findFirst({ where: { userId: user.id } });
-  if (existing) {
+  if (existing && formData.get("additional") !== "1") {
     redirect("/org/dashboard");
   }
 
@@ -50,5 +52,6 @@ export async function completeOnboardingAction(_prev: FormState, formData: FormD
     data: { organizationId: org.id, userId: user.id, action: "CREATE", entityType: "Organization", entityId: org.id },
   });
 
+  await setActiveOrganization(org.id);
   redirect("/org/events/new?first=1");
 }

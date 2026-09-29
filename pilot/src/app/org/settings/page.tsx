@@ -2,27 +2,36 @@ import { requireOrgContext, requireUser, canAdmin } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/shared/page-header";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ORG_ROLE_LABELS, PLAN_LABELS, type OrgRole } from "@/lib/constants";
+import { PLAN_LABELS, type OrgRole } from "@/lib/constants";
 import { SettingsForms } from "./settings-forms";
 import { CategoriesManager } from "./categories-manager";
+import { MembersManager } from "./members-manager";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ComingSoon } from "@/components/shared/empty-state";
 
-export default async function SettingsPage() {
+export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ onglet?: string }> }) {
   const user = await requireUser();
   const ctx = await requireOrgContext();
+  const tab = (await searchParams).onglet ?? "organization";
 
-  const [org, categories, members] = await Promise.all([
+  const [org, categories, members, invitations] = await Promise.all([
     prisma.organization.findUniqueOrThrow({ where: { id: ctx.organizationId } }),
     prisma.category.findMany({ where: { organizationId: ctx.organizationId }, orderBy: { name: "asc" } }),
-    prisma.organizationMember.findMany({ where: { organizationId: ctx.organizationId }, include: { user: true } }),
+    prisma.organizationMember.findMany({
+      where: { organizationId: ctx.organizationId },
+      include: { user: true },
+      orderBy: { createdAt: "asc" },
+    }),
+    canAdmin(ctx.role)
+      ? prisma.invitation.findMany({ where: { organizationId: ctx.organizationId }, orderBy: { createdAt: "desc" } })
+      : Promise.resolve([]),
   ]);
 
   return (
     <div>
       <PageHeader title="Paramètres" />
 
-      <Tabs defaultValue="organization">
+      <Tabs defaultValue={tab}>
         <TabsList>
           <TabsTrigger value="profile">Profil</TabsTrigger>
           <TabsTrigger value="organization">Organisation</TabsTrigger>
@@ -52,27 +61,24 @@ export default async function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="members">
-          <Card className="max-w-xl">
-            <CardHeader>
-              <CardTitle className="text-foreground">Membres ({members.length})</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col divide-y divide-border">
-              {members.map((m) => (
-                <div key={m.id} className="flex items-center justify-between py-2.5 text-sm">
-                  <div>
-                    <p className="font-medium">
-                      {m.user.firstName} {m.user.lastName}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{m.user.email}</p>
-                  </div>
-                  <span className="text-xs text-muted-foreground">{ORG_ROLE_LABELS[m.role as OrgRole] ?? m.role}</span>
-                </div>
-              ))}
-              <div className="pt-3">
-                <ComingSoon label="Invitations de membres" />
-              </div>
-            </CardContent>
-          </Card>
+          <MembersManager
+            members={members.map((m) => ({
+              id: m.id,
+              userId: m.userId,
+              name: `${m.user.firstName} ${m.user.lastName}`,
+              email: m.user.email,
+              role: m.role as OrgRole,
+            }))}
+            invitations={invitations.map((i) => ({
+              id: i.id,
+              email: i.email,
+              role: i.role as OrgRole,
+              token: i.token,
+              expiresAt: i.expiresAt,
+            }))}
+            currentUserId={ctx.userId}
+            actorRole={ctx.role}
+          />
         </TabsContent>
 
         <TabsContent value="categories">

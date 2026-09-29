@@ -45,6 +45,7 @@ model Organization {
   updatedAt       DateTime @updatedAt
 
   members       OrganizationMember[]
+  invitations   Invitation[]
   events        Event[]
   suppliers     Supplier[]
   contributors  Contributor[]
@@ -70,6 +71,24 @@ model OrganizationMember {
 
   @@unique([organizationId, userId])
   @@index([userId])
+}
+
+// Invitation à rejoindre une organisation : un lien secret (token) est partagé à la
+// personne invitée ; elle l'accepte une fois connectée avec l'email invité.
+model Invitation {
+  id             String   @id @default(uuid())
+  organizationId String
+  email          String
+  role           String // Admin, Manager, Member, Viewer (Owner possible si invité par un Owner)
+  token          String   @unique
+  invitedById    String?
+  expiresAt      DateTime
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, email])
+  @@index([email])
 }
 
 // ---------------------------------------------------------------------------
