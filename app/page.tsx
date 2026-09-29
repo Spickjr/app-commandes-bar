@@ -11,11 +11,10 @@ import { attentePreteMs, estPreteEnRetard, useMaintenant } from "./_lib/temps";
 import CaseTable from "./_components/CaseTable";
 import EnTete from "./_components/EnTete";
 import MenuServeur from "./_components/MenuServeur";
-import { useSoiree } from "./_lib/soiree";
 import NavBas from "./_components/NavBas";
 
 export default function Home() {
-  const soiree = useSoiree();
+  const soiree = useCommandeStore((state) => state.soiree);
   const router = useRouter();
   const serveur = useServeur();
 
