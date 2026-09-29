@@ -65,5 +65,5 @@ Toute lecture/écriture passe par `requireOrgContext()` côté serveur, qui vér
 
 - Base : PostgreSQL Supabase (même projet que l'appli Commandes Bar), tables dans le schéma `pilot`,
   inaccessibles aux clés publiques Supabase. Création : coller `supabase/tables.sql` dans Supabase → SQL Editor.
-- Vercel : variables `DATABASE_URL` (pooler Supabase, port 6543, `?pgbouncer=true&schema=pilot`) et `AUTH_SECRET`.
+- Vercel : projet « pilot » (dossier racine `pilot`), variables `DATABASE_URL` (pooler Supabase, port 6543, `?pgbouncer=true&schema=pilot`) et `AUTH_SECRET`.
 - En local avec PostgreSQL : `DATABASE_URL="postgresql://…/pilot?schema=pilot"`, puis `npx prisma db push` et `npm run db:seed`.
